@@ -1,0 +1,56 @@
+.page{display: none;}
+
+
+#balanceTable{
+	display: table;
+	width: 100%;
+}
+.balanceRow{
+	display: table-row;
+}
+.balanceHead{
+	display: table-cell;
+	padding: 3px 10px;
+	border: 1px solid #999999;
+	background-color: #888888;
+}
+.balanceCellAddress{
+	display: table-cell;
+	padding: 3px 10px;
+	border: 1px solid #999999;
+	background-color: #FFFFFF;
+}
+.balanceCellValue{
+	display: table-cell;
+	padding: 3px 10px;
+	border: 1px solid #999999;
+}
+
+#recipientsTable{
+	display: table;
+	width:	100%;
+}
+.recipientsRow{
+	display: table-row;	
+}
+.recipientsHead{
+	display: table-cell;
+	padding: 3px 10px;
+	border: 1px solid #999999;
+	background-color: #888888;
+}
+.recipientsCellAddress{
+	display: table-cell;
+	padding: 3px 10px;
+	border: 1px solid #999999;
+	background-color: #FFFFFF;
+}
+.recipientsCellAmount{
+	display: table-cell;
+	padding: 3px 10px;
+	border: 1px solid #999999;
+}
+#recipientsNewAddress{
+	padding:	0px;
+	boarder: 0px;
+}
