@@ -412,5 +412,5 @@ Things to look for to make sure code is legit:
 		}
 	}
 
-	loadPage("pageKeys");												//show first page
+	loadPage("pageIntro");												//show first page
 })(window,document);
