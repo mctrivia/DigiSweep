@@ -108,49 +108,7 @@ Things to look for to make sure code is legit:
 			}
 		});			
 	}
-/*
-	var getJSON=function(urlORurls) {
-		return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
-			if (typeof urlORurls=="string") {							//if received string then return the promise for just this request
 
-				if (urlORurls.substr(0,5)=='addr/') {
-					var balance=Math.floor(Math.random()*100000000);
-					resolve({
-						"addrStr":	urlORurls.substr(5),
-						"balanceSat":	balance,
-						"balance":		balance/100000000
-					});
-				}
-			
-			} else {
-				var responses={};										//keep track of responses
-				var responsCount=0;
-				var index=0;											//keep track of current request
-				var getNext=function(i) {
-					if (i<urlORurls.length) {							//make sure there are still requests left to process
-						getJSON(urlORurls[i]).then(function(responseData){//make request
-							responsCount++;
-							responses[urlORurls[i]]=responseData;		//store response
-							getNext(index++);							//request the next next index and update value
-						},reject);										//if request failed then fail entire series
-					}
-					if (responsCount==urlORurls.length) {			//check if we have as many responses as requests
-						resolve(responses);								//resolve the promise and return the responses
-					}
-				}
-				for (var i=0;i<MAX_REQUESTS;i++) {						//start up to MAX_REQUEST concurrent requests
-					getNext(index++);									//request the next next index and update value
-				}
-			}
-		});			
-	}
-	
-	
-	
-	[{"address":"D5A1wsGuMpMtqEECXFBgqZAnoBX5RMGWZd","txid":"d6374cb4884ccc603d0002f823d8f3f1e4f3e1ea4ba3c4a74f76bdddbb13f6fc","vout":1,"ts":1527087059,"scriptPubKey":"76a914002c94fb9a27e5449f2ee77cf5bf2552745a266e88ac","amount":0.1,"confirmations":6,"confirmationsFromCache":true}]
-	[{"address":"DQHHutPa8BkG9yR62Y7yr2eKNsZ4WDGmxf","txid":"d6374cb4884ccc603d0002f823d8f3f1e4f3e1ea4ba3c4a74f76bdddbb13f6fc","vout":0,"ts":1527087059,"scriptPubKey":"76a914d1f73611b60f3913cb19da6abeb35214e86318cf88ac","amount":0.1,"confirmations":6,"confirmationsFromCache":true}]
-*/
-	
 	
 	
 /*____             _         ___   _           _     ____        _   _              
@@ -219,6 +177,70 @@ Things to look for to make sure code is legit:
 	
 
 	
+/*___ _____ _____ ____ ___      ______ _____ _____ ____   ___     _____                              _   
+ |  _ \_   _|  __ \___ \__ \    / /  _ \_   _|  __ \___ \ / _ \   / ____|                            | |  
+ | |_) || | | |__) |__) | ) |  / /| |_) || | | |__) |__) | (_) | | (___  _   _ _ __  _ __   ___  _ __| |_ 
+ |  _ < | | |  ___/|__ < / /  / / |  _ < | | |  ___/|__ < \__, |  \___ \| | | | '_ \| '_ \ / _ \| '__| __|
+ | |_) || |_| |    ___) / /_ / /  | |_) || |_| |    ___) |  / /   ____) | |_| | |_) | |_) | (_) | |  | |_ 
+ |____/_____|_|   |____/____/_/   |____/_____|_|   |____/  /_/   |_____/ \__,_| .__/| .__/ \___/|_|   \__|
+                                                                              | |   | |                   
+                                                                              |_|   |_|   
+*/	
+var BIP32_BLOCKS=20;
+var getBip32UsedKeys=function(phrase,derivative) {
+	return new Promise(function(resolve,reject) {					//return promise since execution is asyncronous
+		var data={};
+		var i=0-BIP32_BLOCKS;
+		var getBlock=function() {
+			i+=BIP32_BLOCKS;													//update to get next 40 keys on next pass
+			var keys=bip32(phrase,derivative,i,BIP32_BLOCKS);				//get next 40 keys
+			
+			//make list of public/private keys so easy to keep track
+			var req=[];											
+			for (var ii in keys) {								//go through each private key and look up its value
+				var keySet=keys[ii];
+				data[keySet[0]]={
+					"pub":keySet[0],
+					"pri":keySet[1],
+					"bal":0,
+					"index":i+ii
+				};
+				req.push("addr/"+keySet[0]);							//lookup public address and get its balance
+			}
+			
+			//execute request
+			getJSON(req).then(function(res) {
+				var last=-1;										//way to find end of sequenze
+				for (var url in res) {
+					var addressData=res[url];
+					data[addressData["addrStr"]]["bal"]=addressData["balanceSat"];
+					if (addressData["txApperances"]>0) last=data[addressData["addrStr"]]["index"];
+				}
+				
+				//data.push(pub,pri,balance);
+				
+				if(last!=-1){
+					getBlock();
+				} else {
+					resolve(data);
+				}
+			},reject);
+		}
+		getBlock();
+	});
+}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 /*_  __                _____                 
  | |/ /               |  __ \                
  | ' / ___ _   _ ___  | |__) |_ _  __ _  ___ 
@@ -250,44 +272,75 @@ Things to look for to make sure code is legit:
 			privateKeys=document.getElementById("wif").value;			//get what user typed into input box
 			privateKeys=privateKeys.replace(/\s/g,",");					//replace all white space with ,
 			privateKeys=privateKeys.split(",").filter(function(e){return e});//split up into array of keys and remove duplicates
-			for (var key of privateKeys) {								//go through list of keys and see if they are all valid
-				if (!digibyte.PrivateKey.isValid(key)) 					//looks to see if key is valid
-					return "Invalid Private Key: "+key;					//if not valid then return error message(doesn't bother checking rest of keys)
+			console.log(privateKeys,privateKeys.length);
+			if (privateKeys.length==12) {
+				return true;
+			} else {
+				for (var key of privateKeys) {								//go through list of keys and see if they are all valid
+					if (!digibyte.PrivateKey.isValid(key)) 					//looks to see if key is valid
+						return "Invalid Private Key: "+key;					//if not valid then return error message(doesn't bother checking rest of keys)
+				}
 			}
 			return true;												//no errors found so return false
 		},
 		load: function() {											//function executes when page is loaded by next button
-			var html='<div class="balanceRow"><div class="balanceHead">Addresses</div><div class="balanceHead">Value</div></div>';
-			var reqs=[];
-			utxos=undefined;											//set utxos to undefined so we have easy way to know when loaded
-			for (var key of privateKeys) {								//go through each private key and look up its value
-				reqs.push("addr/"+digibyte.PrivateKey.fromString(key).toAddress().toString());	//compute public address from private key and create api call to get its balance
-			}
-			getJSON(reqs).then(function(reqResponses) {					//request the value of each address
-				fundsTotal=0;											//initialise funds total varible
-				var reqs=[];											//initialise utxo request list
-				for (var url in reqResponses) {							//go through each response and get the url requested
-					var addressData=reqResponses[url];					//get the particular urls response
-					var from=addressData["addrStr"];					//get address balance is from
-					html+='<div class="balanceRow"><div class="balanceCellAddress">'+from+'</div><div class="balanceCellValue">'+addressData["balance"].toFixed(8)+' DGB</div></div>';	//create table row
-					fundsTotal+=addressData["balance"];					//keep running total of balance
-					if (addressData["balanceSat"]>0) reqs.push("addr/"+from+"/utxo");//we need to request the utxos for this input
+			var finish=function() {
+				var html='<div class="balanceRow"><div class="balanceHead">Addresses</div><div class="balanceHead">Value</div></div>';
+				var reqs=[];
+				utxos=undefined;											//set utxos to undefined so we have easy way to know when loaded
+				for (var key of privateKeys) {								//go through each private key and look up its value
+					reqs.push("addr/"+digibyte.PrivateKey.fromString(key).toAddress().toString());	//compute public address from private key and create api call to get its balance
 				}
-				document.getElementById("balanceTable").innerHTML=html;	//write html code to dom
-				document.getElementById("balanceTotal").innerHTML=fundsTotal.toFixed(8);//write total balance found
-				getJSON(reqs).then(function(reqResponses) {				//request utxos for all inputs with DgiByte in them
-					utxos=[];											//initialise utxo list
-					for (var url in reqResponses) {						//go through each response and get the url requested
-						for (var utxo of reqResponses[url]) {			//go through each utxo
-							utxos.push(utxo);							//add utxo to list
-						}
+				getJSON(reqs).then(function(reqResponses) {					//request the value of each address
+					fundsTotal=0;											//initialise funds total varible
+					var reqs=[];											//initialise utxo request list
+					for (var url in reqResponses) {							//go through each response and get the url requested
+						var addressData=reqResponses[url];					//get the particular urls response
+						var from=addressData["addrStr"];					//get address balance is from
+						html+='<div class="balanceRow"><div class="balanceCellAddress">'+from+'</div><div class="balanceCellValue">'+addressData["balance"].toFixed(8)+' DGB</div></div>';	//create table row
+						fundsTotal+=addressData["balance"];					//keep running total of balance
+						if (addressData["balanceSat"]>0) reqs.push("addr/"+from+"/utxo");//we need to request the utxos for this input
 					}
+					document.getElementById("balanceTable").innerHTML=html;	//write html code to dom
+					document.getElementById("balanceTotal").innerHTML=fundsTotal.toFixed(8);//write total balance found
+					getJSON(reqs).then(function(reqResponses) {				//request utxos for all inputs with DgiByte in them
+						utxos=[];											//initialise utxo list
+						for (var url in reqResponses) {						//go through each response and get the url requested
+							for (var utxo of reqResponses[url]) {			//go through each utxo
+								utxos.push(utxo);							//add utxo to list
+							}
+						}
+					},function(e) {
+						return e.message;									//stop the page load function and return why ******* doesn't work because asyncronous.  will fix later
+					});
 				},function(e) {
-					return e.message;									//stop the page load function and return why ******* doesn't work because asyncronous.  will fix later
+					return e.message;										//stop the page load function and return why ******* doesn't work because asyncronous.  will fix later
+				});		
+				
+			}
+			
+			if (privateKeys.length==12) {
+			
+				//lets assume for now all 12 long are bip32 keys
+				getBip32UsedKeys(privateKeys.join(" ")).then(function(data) {
+					console.log(data);
+					privateKeys=[];
+					for (var pa in data) {
+						privateKeys.push(data[pa].pri);						//generate list of private keys like they had typed it in
+					}
+					finish();
+				},function(data) {
+					console.log(data);
+					//there was an error maybe they typed in 12 private keys
+					for (var key of privateKeys) {								//go through list of keys and see if they are all valid
+						if (!digibyte.PrivateKey.isValid(key)) 					//looks to see if key is valid
+							return "Invalid Private Key: "+key;					//if not valid then return error message(doesn't bother checking rest of keys)
+					}
 				});
-			},function(e) {
-				return e.message;										//stop the page load function and return why ******* doesn't work because asyncronous.  will fix later
-			});		
+			} else {
+				finish();
+			}
+		
 			return true;												//report it loaded fine.  *****  don't actually know because may have failed on async.  need to fix
 		}
 	}
