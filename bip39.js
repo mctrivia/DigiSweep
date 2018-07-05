@@ -86661,7 +86661,6 @@ window.Entropy = new (function() {
 		var extendedPrivKey = xprvkeyB58;
 		var extendedPubKey = bip32ExtendedKey.neutered().toBase58();
 		
-		
 		var mkcKeys=[];
 		for (var i=start;i<start+count;i++) {
 			// derive HDkey for this row of the table
@@ -86683,5 +86682,28 @@ window.Entropy = new (function() {
 		
 		return mkcKeys;
 	}
- 
+	window['bip32_getXPUB']=function(phrase,derivationPath) {
+		//set defaultSetTimout
+		derivationPath = derivationPath||"m/0'/0";
+		
+		//set as digibyte
+		network = bitcoinjs.bitcoin.networks.digibyte;
+		setHdCoin(20);
+	
+	
+		// Get the mnemonic phrase
+		var errorText = findPhraseErrors(phrase);
+		if (errorText) {
+			return "bad seed";
+		}
+		// Calculate and display
+		calcBip32RootKeyFromSeed(phrase, "");
+
+		
+	
+		bip32ExtendedKey = calcBip32ExtendedKey(derivationPath);
+
+		
+		return bip32ExtendedKey.neutered().toBase58();
+	}
 })();
