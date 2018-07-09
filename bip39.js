@@ -1,4 +1,7 @@
-﻿// From
+﻿function createBip39(mkc_masterSeedPhrase) {
+mkc_masterSeedPhrase=mkc_masterSeedPhrase||'Bitcoin seed';
+
+// From
 // https://raw.githubusercontent.com/inexorabletash/polyfill/a6bc6ced78160c994f76a909b6ff6bbbab3d43de/es6.js
 // Required for ethereumjs-utils.js when run in phantomjs-2.1.1
 // but is not required in any modern browsers.
@@ -15922,9 +15925,9 @@ function HDNode (keyPair, chainCode) {
   this.parentFingerprint = 0x00000000
 }
 
-HDNode.HIGHEST_BIT = 0x80000000
-HDNode.LENGTH = 78
-HDNode.MASTER_SECRET = Buffer.from('DigiByte seed', 'utf8')
+HDNode.HIGHEST_BIT = 0x80000000;
+HDNode.LENGTH = 78;
+HDNode.MASTER_SECRET = Buffer.from(mkc_masterSeedPhrase, 'utf8');
 
 HDNode.fromSeedBuffer = function (seed, network) {
   typeforce(types.tuple(types.Buffer, types.maybe(types.Network)), arguments)
@@ -86682,6 +86685,9 @@ window.Entropy = new (function() {
 		
 		return mkcKeys;
 	}
+	
+	
+	
 	window['bip32_getXPUB']=function(phrase,derivationPath) {
 		//set defaultSetTimout
 		derivationPath = derivationPath||"m/0'/0";
@@ -86707,3 +86713,6 @@ window.Entropy = new (function() {
 		return bip32ExtendedKey.neutered().toBase58();
 	}
 })();
+
+
+}

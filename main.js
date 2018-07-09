@@ -25,8 +25,10 @@ Things to look for to make sure code is legit:
 
 	var postJSON=function(url,data) {
 		return new Promise(function(resolve,reject) {					//return promise since execution is asyncronous
+			var server=document.getElementById('server').value;
+			console.log("server being used: "+server);
 			var req = new XMLHttpRequest();								//setup http request
-			req['open']('POST', 'https://digiexplorer.info/api/'+url,true);	//set url of file to get
+			req['open']('POST', server+url,true);	//set url of file to get
 			req['setRequestHeader']("Content-Type", "application/json");//show using json
 			req['onload'] = function() {								//run when data is returned
 				if (req['status'] == 200) {								//make sure no error code wasn't returned
@@ -272,7 +274,6 @@ var getBip32UsedKeys=function(phrase,derivative) {
 			privateKeys=document.getElementById("wif").value;			//get what user typed into input box
 			privateKeys=privateKeys.replace(/\s/g,",");					//replace all white space with ,
 			privateKeys=privateKeys.split(",").filter(function(e){return e});//split up into array of keys and remove duplicates
-			console.log(privateKeys,privateKeys.length);
 			if (privateKeys.length==12) {
 				return true;
 			} else {
@@ -322,20 +323,22 @@ var getBip32UsedKeys=function(phrase,derivative) {
 			if (privateKeys.length==12) {
 			
 				//lets assume for now all 12 long are bip32 keys
-				getBip32UsedKeys(privateKeys.join(" ")).then(function(data) {
-					console.log(data);
+				createBip39('DigiByte seed');
+				var seedPhrase=privateKeys.join(" ");
+				getBip32UsedKeys(seedPhrase).then(function(data) {
 					privateKeys=[];
 					for (var pa in data) {
 						privateKeys.push(data[pa].pri);						//generate list of private keys like they had typed it in
 					}
-					finish();
-				},function(data) {
-					console.log(data);
-					//there was an error maybe they typed in 12 private keys
-					for (var key of privateKeys) {								//go through list of keys and see if they are all valid
-						if (!digibyte.PrivateKey.isValid(key)) 					//looks to see if key is valid
-							return "Invalid Private Key: "+key;					//if not valid then return error message(doesn't bother checking rest of keys)
-					}
+					
+					//lets try go seed
+					createBip39('Bitcoin seed');
+					getBip32UsedKeys(seedPhrase).then(function(data) {
+						for (var pa in data) {
+							privateKeys.push(data[pa].pri);						//generate list of private keys like they had typed it in
+						}
+						finish();
+					})
 				});
 			} else {
 				finish();
