@@ -327,23 +327,46 @@ var getBip32UsedKeys=function(phrase,derivative) {
 			if (privateKeys.length==12) {
 			
 				//lets assume for now all 12 long are bip32 keys
-				createBip39('DigiByte seed');
 				var seedPhrase=privateKeys.join(" ");
-				getBip32UsedKeys(seedPhrase).then(function(data) {
-					privateKeys=[];
-					for (var pa in data) {
-						privateKeys.push(data[pa].pri);						//generate list of private keys like they had typed it in
-					}
-					
-					//lets try go seed
-					//createBip39('Bitcoin seed');
-					getBip32UsedKeys(seedPhrase,"m/44'/0'/0'").then(function(data) {
+				var trys=[
+					{
+						"master":"DigiByte seed",
+						"derivation":"m/0'/0"
+					},
+					{
+						"master":"DigiByte seed",
+						"derivation":"m/44'/0'/0'"
+					},
+					{
+						"master":"Bitcoin seed",
+						"derivation":"m/0'/0"
+					},
+					{
+						"master":"Bitcoin seed",
+						"derivation":"m/44'/0'/0'"
+					}				
+				];
+				var tryI=0;
+				var tryNext=function() {
+					createBip39(trys[tryI].master);
+					getBip32UsedKeys(seedPhrase,trys[tryI].derivation).then(function(data) {
+						var found=false;
+						privateKeys=[];
 						for (var pa in data) {
 							privateKeys.push(data[pa].pri);						//generate list of private keys like they had typed it in
+							if (data[pa].bal>0) found=true;
 						}
-						finish();
-					})
-				});
+						tryI++;													//set to try next
+						
+						if ((tryI==trys.length) || (found)) {
+							console.log(trys[tryI-1]);
+							finish();
+						} else {
+							tryNext();
+						}						
+					});
+				}
+				tryNext();
 			} else {
 				finish();
 			}
