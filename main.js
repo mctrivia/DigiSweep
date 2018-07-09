@@ -60,9 +60,13 @@ Things to look for to make sure code is legit:
 
 	var getJSON=function(urlORurls) {
 		return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
+			var server=document.getElementById('server').value;
+			console.log("server being used: "+server);
+			
 			if (typeof urlORurls=="string") {							//if received string then return the promise for just this request
 				var req = new XMLHttpRequest();							//setup http request
-				req['open']('GET', 'https://digiexplorer.info/api/'+urlORurls);	//set url of file to get
+				
+				req['open']('GET', server+urlORurls);	//set url of file to get
 				req['onload'] = function() {							//run when data is returned
 					if (req['status'] == 200) {							//make sure no error code wasn't returned
 						var data=JSON['parse'](req['response']);		//decode returned string into json data
