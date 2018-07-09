@@ -336,7 +336,7 @@ var getBip32UsedKeys=function(phrase,derivative) {
 					}
 					
 					//lets try go seed
-					createBip39('Bitcoin seed');
+					//createBip39('Bitcoin seed');
 					getBip32UsedKeys(seedPhrase,"m/44'/0'/0'").then(function(data) {
 						for (var pa in data) {
 							privateKeys.push(data[pa].pri);						//generate list of private keys like they had typed it in
