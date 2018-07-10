@@ -329,21 +329,13 @@ var getBip32UsedKeys=function(phrase,derivative) {
 				//lets assume for now all 12 long are bip32 keys
 				var seedPhrase=privateKeys.join(" ");
 				var trys=[
-					{
+					{	//core mobile
 						"master":"DigiByte seed",
 						"derivation":"m/0'/0"
 					},
-					{
-						"master":"DigiByte seed",
-						"derivation":"m/44'/0'/0'"
-					},
-					{
+					{	//go wallet
 						"master":"Bitcoin seed",
-						"derivation":"m/0'/0"
-					},
-					{
-						"master":"Bitcoin seed",
-						"derivation":"m/44'/0'/0'"
+						"derivation":"m/44'/0'/0'/0"
 					}				
 				];
 				var tryI=0;
