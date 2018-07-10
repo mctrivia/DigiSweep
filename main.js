@@ -331,32 +331,43 @@ var getBip32UsedKeys=function(phrase,derivative) {
 				var trys=[
 					{	//core mobile
 						"master":"DigiByte seed",
-						"derivation":"m/0'/0"
+						"derivation":"m/0'/0",
+						"type":32
 					},
 					{	//go wallet
 						"master":"Bitcoin seed",
-						"derivation":"m/44'/0'/0'/0"
+						"derivation":"m/44'/0'/0'",
+						"type":44
 					}				
 				];
 				var tryI=0;
 				var tryNext=function() {
-					createBip39(trys[tryI].master);
-					getBip32UsedKeys(seedPhrase,trys[tryI].derivation).then(function(data) {
-						var found=false;
-						privateKeys=[];
+					var countNeeded=(trys[tryI].type==32)?1:2;
+					privateKeys=[];
+					var found=false;
+					var whenDone=function(data) {
 						for (var pa in data) {
 							privateKeys.push(data[pa].pri);						//generate list of private keys like they had typed it in
 							if (data[pa].bal>0) found=true;
 						}
-						tryI++;													//set to try next
-						
-						if ((tryI==trys.length) || (found)) {
-							console.log(trys[tryI-1]);
-							finish();
-						} else {
-							tryNext();
-						}						
-					});
+						if (--countNeeded==0) {
+							tryI++;													//set to try next
+							
+							if ((tryI==trys.length) || (found)) {
+								console.log(trys[tryI-1]);
+								finish();
+							} else {
+								tryNext();
+							}	
+						}
+					}
+					createBip39(trys[tryI].master);
+					if (trys[tryI].type==32) {
+						getBip32UsedKeys(seedPhrase,trys[tryI].derivation).then(whenDone);
+					} else {
+						getBip32UsedKeys(seedPhrase,trys[tryI].derivation+"/0").then(whenDone);
+						getBip32UsedKeys(seedPhrase,trys[tryI].derivation+"/1").then(whenDone);						
+					}
 				}
 				tryNext();
 			} else {
