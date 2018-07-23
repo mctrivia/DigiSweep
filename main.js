@@ -117,6 +117,32 @@ Things to look for to make sure code is legit:
 
 	
 	
+/*_          ___           _                  _____           _                 
+ \ \        / (_)         | |                / ____|         | |                
+  \ \  /\  / / _ _ __   __| | _____      __ | (___  _   _ ___| |_ ___ _ __ ___  
+   \ \/  \/ / | | '_ \ / _` |/ _ \ \ /\ / /  \___ \| | | / __| __/ _ \ '_ ` _ \ 
+    \  /\  /  | | | | | (_| | (_) \ V  V /   ____) | |_| \__ \ ||  __/ | | | | |
+     \/  \/   |_|_| |_|\__,_|\___/ \_/\_/   |_____/ \__, |___/\__\___|_| |_| |_|
+                                                     __/ |                      
+                                                    |___/ 
+*/
+	var domShadow=document['getElementById']('shadow');
+	var closeWindows=function(shadow) {
+		var windows=document['getElementsByClassName']('window');				//get all windows
+		for (var i=0; i<windows['length']; i++) {								//go through each window
+			windows[i]['style']['display']='none';								//make window invisible
+		}
+//		tempQRLayer=undefined;
+		if (shadow===true) domShadow['style']['display']='none';				//close shadow if set
+	}
+	var openWindow=function(windowType) {
+		closeWindows();															//close all windows
+		document['getElementById']("window_"+windowType)['style']['display']='block';//open the window associated with button pressed
+		domShadow['style']['display']='block';									//open shadow
+	}
+			
+	
+	
 /*____             _         ___   _           _     ____        _   _              
  |  _ \           | |       / / \ | |         | |   |  _ \      | | | |             
  | |_) | __ _  ___| | __   / /|  \| | _____  _| |_  | |_) |_   _| |_| |_ ___  _ __  
@@ -193,12 +219,13 @@ Things to look for to make sure code is legit:
                                                                               |_|   |_|   
 */	
 var BIP32_BLOCKS=20;
-var getBip32UsedKeys=function(phrase,derivative) {
+var getBip32UsedKeys=function(phrase,derivative,outputNum) {
 	return new Promise(function(resolve,reject) {					//return promise since execution is asyncronous
 		var data={};
 		var i=0-BIP32_BLOCKS;
 		var getBlock=function() {
 			i+=BIP32_BLOCKS;													//update to get next 40 keys on next pass
+			document.getElementById('bip39_block'+outputNum).innerHTML='Scanning: '+derivative+'/' + i + ' to ' + derivative +'/'+(i+BIP32_BLOCKS);
 			var keys=bip32(phrase,derivative,i,BIP32_BLOCKS);				//get next 40 keys
 			
 			//make list of public/private keys so easy to keep track
@@ -209,6 +236,7 @@ var getBip32UsedKeys=function(phrase,derivative) {
 					"pub":keySet[0],
 					"pri":keySet[1],
 					"bal":0,
+					"txs":0,
 					"index":i+ii
 				};
 				req.push("addr/"+keySet[0]);							//lookup public address and get its balance
@@ -220,6 +248,7 @@ var getBip32UsedKeys=function(phrase,derivative) {
 				for (var url in res) {
 					var addressData=res[url];
 					data[addressData["addrStr"]]["bal"]=addressData["balanceSat"];
+					data[addressData["addrStr"]]["txs"]=addressData["txApperances"];
 					if (addressData["txApperances"]>0) last=data[addressData["addrStr"]]["index"];
 				}
 				
@@ -290,6 +319,8 @@ var getBip32UsedKeys=function(phrase,derivative) {
 		},
 		load: function() {											//function executes when page is loaded by next button
 			var finish=function() {
+				openWindow("bal");
+				document.getElementById("keyCount").innerHTML=privateKeys.length;	//show how many keys there are to search
 				var html='<div class="balanceRow"><div class="balanceHead">Addresses</div><div class="balanceHead">Value</div></div>';
 				var reqs=[];
 				utxos=undefined;											//set utxos to undefined so we have easy way to know when loaded
@@ -308,6 +339,7 @@ var getBip32UsedKeys=function(phrase,derivative) {
 					}
 					document.getElementById("balanceTable").innerHTML=html;	//write html code to dom
 					document.getElementById("balanceTotal").innerHTML=fundsTotal.toFixed(8);//write total balance found
+					closeWindows(true);
 					getJSON(reqs).then(function(reqResponses) {				//request utxos for all inputs with DgiByte in them
 						utxos=[];											//initialise utxo list
 						for (var url in reqResponses) {						//go through each response and get the url requested
@@ -325,53 +357,62 @@ var getBip32UsedKeys=function(phrase,derivative) {
 			}
 			
 			if (privateKeys.length==12) {
-			
+				openWindow("bip39");
+				
 				//lets assume for now all 12 long are bip32 keys
-				var seedPhrase=privateKeys.join(" ");
+				var seedPhrase=privateKeys.join(" ");							//recombine seed phrase into a string
 				var trys=[
 					{	//core mobile
+						"name":"Core Mobile",
 						"master":"DigiByte seed",
-						"derivation":"m/0'/0",
-						"type":32
+						"derivation":"m/0'",
+						"type":44
 					},
 					{	//go wallet
+						"name":"DigiByte Go",
 						"master":"Bitcoin seed",
 						"derivation":"m/44'/0'/0'",
 						"type":44
-					}				
+					},
+					/*
+					{	//coinomi wallet not tested since uses 18 word
+						"master":"Bitcoin seed",
+						"derivation":"m/44'/20'/0'",
+						"type":44
+					}
+					*/					
 				];
 				var tryI=0;
-				var tryNext=function() {
-					var countNeeded=(trys[tryI].type==32)?1:2;
-					privateKeys=[];
-					var found=false;
-					var whenDone=function(data) {
-						for (var pa in data) {
-							privateKeys.push(data[pa].pri);						//generate list of private keys like they had typed it in
-							if (data[pa].bal>0) found=true;
+				privateKeys=[];													//make sure private keys where initialised
+				var tryNext=function() {										//create function that checks next recovery option.  Not a for loop because of asyncronous calls
+					var countNeeded=(trys[tryI].type==32)?1:2;					//initialise counter so we know how many asyncronous calls will be made
+					var whenDone=function(data) {								//create function to execute when done since getBip39 is asyncronous and we may be running more then 1 at a time
+						for (var pa in data) {									//go through each returned key pair
+							if (data[pa].txs>0) {								//only include private keys that have been used
+								privateKeys.push(data[pa].pri);					//generate list of private keys like they had typed it in
+							}
 						}
-						if (--countNeeded==0) {
-							tryI++;													//set to try next
-							
-							if ((tryI==trys.length) || (found)) {
-								console.log(trys[tryI-1]);
-								finish();
+						if (--countNeeded==0) {									//check if all asyncronous requests done
+							if (++tryI==trys.length) {							//see if at the end or not
+								finish();										//we reached the end of try list so run the finish up function
 							} else {
-								tryNext();
+								tryNext();										//not done yet so try next option
 							}	
 						}
 					}
-					createBip39(trys[tryI].master);
-					if (trys[tryI].type==32) {
-						getBip32UsedKeys(seedPhrase,trys[tryI].derivation).then(whenDone);
+					document.getElementById('bip39_app').innerHTML=trys[tryI].name;	//show current app trying
+					createBip39(trys[tryI].master);								//initialise bip39 object with desired master seed
+					if (trys[tryI].type==32) {									//check if wallet is bip 32
+						getBip32UsedKeys(seedPhrase,trys[tryI].derivation,0).then(whenDone);			//bip 32 uses single derivateve path
+						document.getElementById('bip39_block1').innerHTML='';							//make sure line 2 is blank
 					} else {
-						getBip32UsedKeys(seedPhrase,trys[tryI].derivation+"/0").then(whenDone);
-						getBip32UsedKeys(seedPhrase,trys[tryI].derivation+"/1").then(whenDone);						
+						getBip32UsedKeys(seedPhrase,trys[tryI].derivation+"/0",0).then(whenDone);		//bip 44 external derivative path
+						getBip32UsedKeys(seedPhrase,trys[tryI].derivation+"/1",1).then(whenDone);		//bip 44 internal derivative path			
 					}
 				}
-				tryNext();
+				tryNext();														//try first option
 			} else {
-				finish();
+				finish();														//not a seed phrase so just jump to private key value finder
 			}
 		
 			return true;												//report it loaded fine.  *****  don't actually know because may have failed on async.  need to fix
@@ -459,6 +500,7 @@ var getBip32UsedKeys=function(phrase,derivative) {
 		for (var i=0; i<domAmount.length; i++) {						//go through each dom element with class "recipientsCellAmount"
 			domAmount[i].addEventListener('change',recipientsUpdate,false);//listen for change events
 		}
+		document.getElementById('pageRecipientsNext').disabled=false;	//make next button available
 	}, false);
 
 
