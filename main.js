@@ -299,21 +299,25 @@ var getBip32UsedKeys=function(phrase,derivative,outputNum) {
                                                    __/ |     
                                                   |___/ 
 */	
+	var isSeedPhrase;
 	var privateKeys;													//initialise private key list(never leaves this page or stored)
 	var fundsTotal=0;													//total funds available
 	var utxos;															//utxo list
 	$PAGE["pageBalances"]={
 		valid: function() {											//function executes to validate key inputs returns false if no errors.
+			isSeedPhrase=false;											//initialise seed phrase check
 			privateKeys=document.getElementById("wif").value;			//get what user typed into input box
 			privateKeys=privateKeys.replace(/\s/g,",");					//replace all white space with ,
 			privateKeys=privateKeys.split(",").filter(function(e){return e});//split up into array of keys and remove duplicates
-			if (privateKeys.length==12) {
-				return true;
-			} else {
-				for (var key of privateKeys) {								//go through list of keys and see if they are all valid
-					if (!digibyte.PrivateKey.isValid(key)) 					//looks to see if key is valid
-						return "Invalid Private Key: "+key;					//if not valid then return error message(doesn't bother checking rest of keys)
+			if ((privateKeys.length%6==0)&&(privateKeys.length>11)) {	//find if 12,18,24,...
+				if (privateKeys[0].length<20) {							//check if short word or long private key
+					isSeedPhrase=true;									//is likely seed phrase
+					return true;										//mark as valid because don't have validity check yet
 				}
+			}
+			for (var key of privateKeys) {								//go through list of keys and see if they are all valid
+				if (!digibyte.PrivateKey.isValid(key)) 					//looks to see if key is valid
+					return "Invalid Private Key: "+key;					//if not valid then return error message(doesn't bother checking rest of keys)
 			}
 			return true;												//no errors found so return false
 		},
@@ -356,31 +360,43 @@ var getBip32UsedKeys=function(phrase,derivative,outputNum) {
 				
 			}
 			
-			if (privateKeys.length==12) {
+			console.log('is seed phrase',isSeedPhrase);
+			if (isSeedPhrase) {
 				openWindow("bip39");
 				
 				//lets assume for now all 12 long are bip32 keys
+				var seedPhraseLength=privateKeys.length;						//get number of words in seed phrase
 				var seedPhrase=privateKeys.join(" ");							//recombine seed phrase into a string
+				console.log('seed phrase length:'+seedPhraseLength);
 				var trys=[
-					{	//core mobile
+					{
 						"name":"Core Mobile",
 						"master":"DigiByte seed",
 						"derivation":"m/0'",
-						"type":44
+						"type":44,
+						"length":12
 					},
-					{	//go wallet
+					{
 						"name":"DigiByte Go",
 						"master":"Bitcoin seed",
 						"derivation":"m/44'/0'/0'",
-						"type":44
+						"type":44,
+						"length":12
 					},
-					/*
-					{	//coinomi wallet not tested since uses 18 word
+					{
+						"name":"Coinomi",
 						"master":"Bitcoin seed",
 						"derivation":"m/44'/20'/0'",
-						"type":44
-					}
-					*/					
+						"type":44,
+						"length":18
+					},
+					{
+						"name":"Coinomi",
+						"master":"Bitcoin seed",
+						"derivation":"m/44'/20'/0'",
+						"type":44,
+						"length":24
+					}					
 				];
 				var tryI=0;
 				privateKeys=[];													//make sure private keys where initialised
@@ -400,14 +416,18 @@ var getBip32UsedKeys=function(phrase,derivative,outputNum) {
 							}	
 						}
 					}
-					document.getElementById('bip39_app').innerHTML=trys[tryI].name;	//show current app trying
-					createBip39(trys[tryI].master);								//initialise bip39 object with desired master seed
-					if (trys[tryI].type==32) {									//check if wallet is bip 32
-						getBip32UsedKeys(seedPhrase,trys[tryI].derivation,0).then(whenDone);			//bip 32 uses single derivateve path
-						document.getElementById('bip39_block1').innerHTML='';							//make sure line 2 is blank
-					} else {
-						getBip32UsedKeys(seedPhrase,trys[tryI].derivation+"/0",0).then(whenDone);		//bip 44 external derivative path
-						getBip32UsedKeys(seedPhrase,trys[tryI].derivation+"/1",1).then(whenDone);		//bip 44 internal derivative path			
+					if (trys[tryI].length==seedPhraseLength) {					//see if seed phrase is correct length
+						document.getElementById('bip39_app').innerHTML=trys[tryI].name;	//show current app trying
+						createBip39(trys[tryI].master);								//initialise bip39 object with desired master seed
+						if (trys[tryI].type==32) {									//check if wallet is bip 32
+							getBip32UsedKeys(seedPhrase,trys[tryI].derivation,0).then(whenDone);			//bip 32 uses single derivateve path
+							document.getElementById('bip39_block1').innerHTML='';							//make sure line 2 is blank
+						} else {
+							getBip32UsedKeys(seedPhrase,trys[tryI].derivation+"/0",0).then(whenDone);		//bip 44 external derivative path
+							getBip32UsedKeys(seedPhrase,trys[tryI].derivation+"/1",1).then(whenDone);		//bip 44 internal derivative path			
+						}
+					} else {													//not correct length so we skip
+						countNeeded=1;whenDone();								//skip to next try
 					}
 				}
 				tryNext();														//try first option
