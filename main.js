@@ -190,14 +190,16 @@ Things to look for to make sure code is legit:
 				return false;											//bomb out of function so we don't load page
 			}
 		}
-		var loaded=((next?pageCode.load:pageCode.reload)||emptyFunc)(val);//executes page code if exists
-		if (loaded!==true) {
-			console.log("Error Loading: ",loaded);						//show error in log  **** make prettier later
-			return false;												//bomb out of function so we don't load page
-		}
-		for (var i=0; i<domPage.length; i++) 							//go through each element with class "page"
-			domPage[i].style.display = 'none';						//hide them
-		document.getElementById(page).style.display = 'block';		//make desired page visible
+		setTimeout(function() {
+			var loaded=((next?pageCode.load:pageCode.reload)||emptyFunc)(val);//executes page code if exists
+			if (loaded!==true) {
+				console.log("Error Loading: ",loaded);						//show error in log  **** make prettier later
+				return false;												//bomb out of function so we don't load page
+			}
+			for (var i=0; i<domPage.length; i++) 							//go through each element with class "page"
+				domPage[i].style.display = 'none';						//hide them
+			document.getElementById(page).style.display = 'block';		//make desired page visible
+		},1);
 	};
 	for (var i=0; i<domNext.length; i++) {								//go through each dom element with class "next"
 		domNext[i].addEventListener('click', loadPage, false);			//attach click listener to execute loadPage function
@@ -312,6 +314,7 @@ var getBip32UsedKeys=function(phrase,derivative,outputNum) {
 			if ((privateKeys.length%6==0)&&(privateKeys.length>11)) {	//find if 12,18,24,...
 				if (privateKeys[0].length<20) {							//check if short word or long private key
 					isSeedPhrase=true;									//is likely seed phrase
+					openWindow("wait");									//open generic wait screen so people know we are doing something				
 					return true;										//mark as valid because don't have validity check yet
 				}
 			}
@@ -319,6 +322,7 @@ var getBip32UsedKeys=function(phrase,derivative,outputNum) {
 				if (!digibyte.PrivateKey.isValid(key)) 					//looks to see if key is valid
 					return "Invalid Private Key: "+key;					//if not valid then return error message(doesn't bother checking rest of keys)
 			}
+			openWindow("wait");											//open generic wait screen so people know we are doing something
 			return true;												//no errors found so return false
 		},
 		load: function() {											//function executes when page is loaded by next button
@@ -384,19 +388,26 @@ var getBip32UsedKeys=function(phrase,derivative,outputNum) {
 						"length":12
 					},
 					{
-						"name":"Coinomi",
+						"name":"Coinomi Legacy",
 						"master":"Bitcoin seed",
 						"derivation":"m/44'/20'/0'",
 						"type":44,
-						"length":18
+						"length":0		//all valid
+					}/*,
+					{
+						"name":"Coinomi Default",
+						"master":"Bitcoin seed",
+						"derivation":"m/84'/20'/0'",
+						"type":44,
+						"length":0		//all valid
 					},
 					{
-						"name":"Coinomi",
+						"name":"Coinomi Compatibility",
 						"master":"Bitcoin seed",
-						"derivation":"m/44'/20'/0'",
+						"derivation":"m/49'/20'/0'",
 						"type":44,
-						"length":24
-					}					
+						"length":0		//all valid
+					}*/
 				];
 				var tryI=0;
 				privateKeys=[];													//make sure private keys where initialised
@@ -416,7 +427,7 @@ var getBip32UsedKeys=function(phrase,derivative,outputNum) {
 							}	
 						}
 					}
-					if (trys[tryI].length==seedPhraseLength) {					//see if seed phrase is correct length
+					if ((trys[tryI].length==0)||(trys[tryI].length==seedPhraseLength)) {					//see if seed phrase is correct length
 						document.getElementById('bip39_app').innerHTML=trys[tryI].name;	//show current app trying
 						createBip39(trys[tryI].master);								//initialise bip39 object with desired master seed
 						if (trys[tryI].type==32) {									//check if wallet is bip 32
