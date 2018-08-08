@@ -1,6 +1,26 @@
 .page{display: none;}
 
 
+#pathsTable{
+	display: table;
+	width: 100%;
+}
+.pathsRow{
+	display: table-row;	
+}
+.pathsHead{
+	display: table-cell;
+	padding: 3px 10px;
+	border: 1px solid #999999;
+	background-color: #888888;	
+}
+.pathsCell{
+	display: table-cell;
+	padding: 3px 10px;
+	border: 1px solid #999999;
+	background-color: #FFFFFF;
+}
+
 #balanceTable{
 	display: table;
 	width: 100%;

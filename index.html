@@ -20,9 +20,10 @@
 	<div id="balanceTable"></div>
 	<div id="balanceTotals">Total DGB Found: <span id="balanceTotal"></span> DGB</div>
 	<h3>Please verify this is expected value</h3>
-	<br><input type="button" page="pageKeys" class="back" value="Back"><input type="button" page="pageRecipients" class="next" value="Next">
+	<br><input type="button" page="pageKeys" class="back" value="Add more wallets"><input type="button" page="pageRecipients" class="next" value="Next">
 </div>
 <div id="pageRecipients" class="page">
+	<h3>Pick up to 100 addresses to send the <span id="recipientTotal"></span> DGB to</h3>
 	Recipient Address: <input type="text" id="recipientsNew"><input type="button" id="recipientsAdd" value="Add"><br>
 	<div id="recipientsTable"></div>
 	<br><input type="button" page="pageBalances" class="back" value="Back"><input id="pageRecipientsNext" type="button" page="pageSent" class="next" value="Send" disabled>
@@ -36,6 +37,12 @@
 <div id="window_wait" class="window">
 <h1>Please Wait Processing</h1>
 </div>
+
+<div id="window_paths" class="window">
+<h1>Checking Common Paths:</h1>
+<div id="pathsTable"></div>
+</div>
+
 <div id="window_bip39" class="window">
 <h1>Processing BIP39 Seed:</h1>
 Trying <span id="bip39_app"></span><br>
@@ -45,6 +52,23 @@ Trying <span id="bip39_app"></span><br>
 <div id="window_bal" class="window">
 <h1>Getting Balance:</h1>
 Scanning balance of <span id="keyCount"></span> private keys
+</div>
+<div id="window_utxos" class="window">
+<h1>Getting UTXOs:</h1>
+Currently gathering all unspent outputs(UTXO) for the requested addresses.<br>
+This may take a minute.
+</div>
+<div id="window_sending" class="window">
+<h1>Sending:</h1>
+Sending send command to server.<br>
+Your private keys do not leave this machine<br>
+only signatures proving you know them.
+</div>
+
+<div id="window_error" class="window">
+<h1>Error:</h1>
+<span id="errorMessage"></span><br>
+<input type="button" class="close" value="OK">
 </div>
 
 <script src="digibyte.min.js"></script>
