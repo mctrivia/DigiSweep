@@ -264,7 +264,7 @@ Things to look for to make sure code is legit:
 		
 		var txt='data:text/csv;charset=utf-8,';
 		for (var address in accountData) {
-			txt+=accountData[address].address+','+accountData[address].private+"\r\n";			
+			txt+=address+','+accountData[address].private+"\r\n";			
 		}
 		txt.slice(-2);
 		
