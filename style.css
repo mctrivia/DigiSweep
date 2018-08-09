@@ -1,5 +1,9 @@
 .page{display: none;}
 
+#exportLink{
+	font-size: 30px;
+	padding: 10px;
+}
 
 #pathsTable{
 	display: table;

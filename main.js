@@ -258,8 +258,22 @@ Things to look for to make sure code is legit:
                                                   |___/ 
 */	
 	
-//	var fundsTotal=0;													//total funds available
-//	var utxos;															//utxo list
+	
+	var exportKeys=function() {
+		openWindow('wait');
+		
+		var txt='data:text/csv;charset=utf-8,';
+		for (var address in accountData) {
+			txt+=accountData[address].address+','+accountData[address].private+"\r\n";			
+		}
+		txt.slice(-2);
+		
+		document.getElementById('exportLink').setAttribute('href',encodeURI(txt));
+		openWindow('export');
+	}
+	document.getElementById('export').addEventListener('click',exportKeys);
+	
+	
 	var getDataFromSeed=function(seedPhrase) {
 		return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
 				/*Resolve:
