@@ -300,31 +300,32 @@ Things to look for to make sure code is legit:
 					"name":"Core Mobile",
 					"master":"DigiByte seed",
 					"derivation":"m/0'",
-					"type":"D"
+					"start":"D"
 				},
 				{
 					"name":"DigiByte Go",
 					"master":"Bitcoin seed",
 					"derivation":"m/44'/0'/0'",
-					"type":"D"
+					"start":"D"
 				},
 				{
-					"name":"Coinomi Legacy",
+					"name":"BIP44 Wallets",
 					"master":"Bitcoin seed",
 					"derivation":"m/44'/20'/0'",
-					"type":"D"
-				}/*,
+					"start":"D"
+				},
+				/*
 				{
-					"name":"Coinomi Default",
+					"name":"BIP84 Wallets",
 					"master":"Bitcoin seed",
 					"derivation":"m/84'/20'/0'",
-					"type":"dgb1"
+					"start":"dgb"
 				},
 				{
-					"name":"Coinomi Compatibility",
+					"name":"BIP49 Wallets",
 					"master":"Bitcoin seed",
 					"derivation":"m/49'/20'/0'",
-					"type":"S"
+					"start":"S"
 				}
 				*/
 			];
@@ -339,8 +340,8 @@ Things to look for to make sure code is legit:
 				for (var i in appTests) {
 					var testData=appTests[i];
 					testData.scan=false;									//initailise scan flag to false
-					html+='<div class="pathsRow"><div class="pathsCell">'+testData.derivation+'/0</div><div class="pathsCell" id="path'+i+'0">Testing</div></div>';
-					html+='<div class="pathsRow"><div class="pathsCell">'+testData.derivation+'/1</div><div class="pathsCell" id="path'+i+'1">Testing</div></div>';
+					html+='<div class="pathsRow"><div class="pathsCell">'+testData.name+' Input</div><div class="pathsCell" id="path'+i+'0">Testing</div></div>';
+					html+='<div class="pathsRow"><div class="pathsCell">'+testData.name+' Change</div><div class="pathsCell" id="path'+i+'1">Testing</div></div>';
 				}
 				document.getElementById('pathsTable').innerHTML=html;
 				setTimeout(quickCheck,10);
@@ -359,12 +360,13 @@ Things to look for to make sure code is legit:
 					var testData=appTests[testIndex];
 					for (var di=0;di<2;di++) {									//check incoming/change
 						if (testData.master!=lastMaster) {					//speed up processing by only reseting master when needed
-							createBip39(testData.master);
+							bip39.rebuild(testData.master);
 							lastMaster=testData.master;
 						}
 						var test={
-							"extendedKeys":	bip32_getExtendedKey(seedPhrase,testData.derivation+'/'+di),
+							"extendedKeys":	bip39.getHDKey(seedPhrase,"",testData.derivation+'/'+di),
 							"scan":			false,
+							"start":		testData.start,
 							"scanned":		0,
 							"max":			0,
 							"giveUp":		MAX_UNUSED,
@@ -372,7 +374,7 @@ Things to look for to make sure code is legit:
 							"dom":			document.getElementById('path'+testIndex+di)
 						};
 						for (var keyI=0;keyI<2;keyI++) {
-							req.push('addr/'+bip32_getKey(test.extendedKeys,keyI)[0]);//get address for test and save request
+							req.push('addr/'+bip39.getAddress(test.extendedKeys,keyI,test.start));//get address for test and save request
 						}
 						tests.push(test);
 					}
@@ -419,12 +421,11 @@ Things to look for to make sure code is legit:
 				var add=function(testIndex) {
 					var test=tests[testIndex];
 					var keyI=test.max++;
-					var keys=bip32_getKey(test.extendedKeys,keyI);
 					buffer.push({
 						"test":testIndex,
 						"index":keyI,
-						"address":keys[0],
-						"private":keys[1]
+						"address":bip39.getAddress(test.extendedKeys,keyI,test.start),
+						"private":bip39.getPrivate(test.extendedKeys,keyI)
 					});
 					get();
 				}
