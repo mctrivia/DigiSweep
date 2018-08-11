@@ -352,6 +352,9 @@ Things to look for to make sure code is legit:
 			* scans first 2 incoming,   *
 			* and 2 change addresses    *
 			************************** */
+			var updateCount=function(test,count) {
+				test.dom.innerHTML='Found: '+count+(count>0?'<img class="bip39dots" src="dots.gif">':'') ;
+			}
 			var tests=[];
 			var quickCheck=function() {
 				var lastMaster='';
@@ -391,7 +394,7 @@ Things to look for to make sure code is legit:
 					}
 					if (!found) return reject("No transactions found for known apps");
 					for (var test of tests) {								//go through each app test one at a time
-						test.dom.innerHTML='Found: '+(test.scan?'1':'0');
+						updateCount(test,test.scan?1:0);
 					}
 					setTimeout(fullScan,10);
 				},reject);
@@ -442,7 +445,7 @@ Things to look for to make sure code is legit:
 						var test=tests[curData.test];						//get app being tested
 						if (reqData.txApperances!=0) {						//see if ay transactions done on address
 							test.giveUp=MAX_UNUSED;							//if used then reset giveup counter
-							test.dom.innerHTML='Found: '+(++test.scanned);	//update count scanned
+							updateCount(test,++test.scanned);				//update count scanned
 							data[curData.address]={							//store returned data
 								"type":	test.type,
 								"balance":reqData.balance,

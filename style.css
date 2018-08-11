@@ -1,5 +1,9 @@
 .page{display: none;}
 
+.bip39dots{
+	height:14px;
+}
+
 #exportLink{
 	font-size: 30px;
 	padding: 10px;
