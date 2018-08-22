@@ -243,6 +243,75 @@ Things to look for to make sure code is legit:
             __/ |                  __/ |     
            |___/                  |___/ 
 */
+
+	var checkOldWallet=function(data) {
+		return new Promise(function(resolve,reject) {					//return promise since execution is asyncronous
+			//check if old wallet
+			var lines=data.split("\n");						//split file to lines
+			var badLines=0;									//initialize bad lines variable
+			var encoded='';									//initialize encoded variable
+			for (var line of lines) {						//get each line of file
+				line=line.trim();							//remove excess from line
+				encoded+=line;								//save encoded data
+				var l=line.length;							//get length of line
+				if ((l!=76)&&(l!=0)) badLines++;			//if length is not 0 or 76 characters its a bad line
+			}
+			if (badLines>1) return reject();				//if more then 1 line that is wrong length then cancel
+			if (lines.length<4) return reject();			//if file is to short cancel
+
+			//get keys from file
+			openWindow("password");
+			var tryPasswords=function() {
+				var passwords=document.getElementById("passwords").value.split("\n");
+				for (var pass of passwords) {
+					try {
+						console.log(encoded,pass);
+						var data=GibberishAES.dec(encoded,pass.trim()).split("\n");//decode data
+						var keys=[];								//initialize keys array
+						for (var line of data) {					//go through each line of the data
+							line=line.trim();						//remove white space
+							if ((line.length>0) && (line[0]!='#')) {//only process lines with keys on it
+								keys.push(line.split(" ")[0]);		//split out key
+							}
+						}
+						resolve(keys);								//return keys
+					} catch(e) {
+					}
+				}
+				openWindow("password");
+			}
+			document.getElementById("passwordTry").addEventListener('click',function() {
+				openWindow("wait");
+				setTimeout(tryPasswords,10);
+			});
+			document.getElementById("passwordFail").addEventListener('click',reject);
+		});
+	}
+	document.getElementById('keysFile').addEventListener('change',function(e) {
+		var file=document.getElementById('keysFile').files[0];
+		if (file) {
+			var reader=new FileReader();
+			reader.readAsText(file,"UTF-8");
+			reader.onload=function(evt) {
+				var data=evt.target.result;
+				checkOldWallet(data).then(function(keys) {
+					//returns array of keys
+					document.getElementById("wif").value=keys.join(" ");
+					loadPage("pageBalances");
+					
+				}, function() {
+					//see if contains plain text keysFile
+					document.getElementById("wif").value=data;
+					closeWindows(true);
+					
+				});
+			}
+			reader.onerror = function() {
+				error("Couldn't Load File");
+			}			
+		}		
+	});
+	
 	
 	
 	
@@ -353,7 +422,7 @@ Things to look for to make sure code is legit:
 			* and 2 change addresses    *
 			************************** */
 			var updateCount=function(test,count) {
-				test.dom.innerHTML='Found: '+count+(count>0?'<img class="bip39dots" src="dots.gif">':'') ;
+				test.dom.innerHTML='Found: '+count+(count>0?'<img class="bip39dots" src="dots.gif">':'<div class="bip39dots"></div>') ;
 			}
 			var tests=[];
 			var quickCheck=function() {

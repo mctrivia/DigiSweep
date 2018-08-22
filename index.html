@@ -8,6 +8,7 @@
 <div id="pageKeys" class="page">
 	Private Key(s) or Seed Phrase: <br>
 	<textarea id="wif" cols="40" rows="5"></textarea><br>
+	or <input type="file" id="keysFile"><br>&nbsp;<br>
 	Server: <select id="server">
 		<option value="https://digiexplorer.info/api/" selected>Main(DigiExplorer.info)</option>
 		<option value="https://explorer.digibyteprojects.com/api/">Backup 1(digibyteprojects.com)</option>
@@ -73,6 +74,12 @@ Sending send command to server.<br>
 Your private keys do not leave this machine<br>
 only signatures proving you know them.
 </div>
+<div id="window_password" class="window">
+<h1>Password Protected Input:</h1>
+<h3>Please provide a list of passwords we should try. 1 per line.</h3>
+<textarea id="passwords" cols="40" rows="5"></textarea><br>
+<input type="submit" id="passwordTry" value="Try Passwords">&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit" id="passwordFail" value="Cancel">
+</div>
 
 <div id="window_error" class="window">
 <h1>Error:</h1>
@@ -82,4 +89,5 @@ only signatures proving you know them.
 
 <script src="digibyte.min.js"></script>
 <script src="bip39.js"></script>
+<script src="gibberish-aes.min.js"></script>
 <script src="main.js"></script>
