@@ -359,7 +359,16 @@ Things to look for to make sure code is legit:
 				*/
 			
 			seedPhrase=seedPhrase.join(" ");							//recombine seed phrase into a string
-				
+			
+			/* ************************
+			* Check Seed Phrase       *
+			************************ */
+			var errorText=bip39.findPhraseErrors(seedPhrase);
+			if (errorText!==false) {
+				return reject(errorText);
+			}
+			
+			
 				
 			/* ************************
 			* App Configuration       *
