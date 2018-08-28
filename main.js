@@ -244,6 +244,36 @@ Things to look for to make sure code is legit:
            |___/                  |___/ 
 */
 
+	var checkOldGoWallet=function(data) {
+		return new Promise(function(resolve,reject) {					//return promise since execution is asyncronous
+			//decode data and verify data
+			var jsonData=JSON.parse(data);
+			if (jsonData===null) return reject();
+
+			//get keys from file
+			openWindow("password");
+			var tryPasswords=function() {
+				var passwords=document.getElementById("passwords").value.split("\n");
+				for (var pass of passwords) {
+					console.log(pass,jsonData);
+					try {
+						var decoded=JSON.parse(sjcl.decrypt(pass, data));
+						console.log(decoded);
+						if (decoded["mnemonic"]!=undefined) {		//may need to use xPrivKey
+							return resolve(decoded["mnemonic"]);	
+						}
+					} catch(e) {
+					}
+				}
+				openWindow("password");
+			}
+			document.getElementById("passwordTry").addEventListener('click',function() {
+				openWindow("wait");
+				setTimeout(tryPasswords,10);
+			});
+			document.getElementById("passwordFail").addEventListener('click',reject);			
+		});
+	}
 	var checkOldWallet=function(data) {
 		return new Promise(function(resolve,reject) {					//return promise since execution is asyncronous
 			//check if old wallet
@@ -265,7 +295,6 @@ Things to look for to make sure code is legit:
 				var passwords=document.getElementById("passwords").value.split("\n");
 				for (var pass of passwords) {
 					try {
-						console.log(encoded,pass);
 						var data=GibberishAES.dec(encoded,pass.trim()).split("\n");//decode data
 						var keys=[];								//initialize keys array
 						for (var line of data) {					//go through each line of the data
@@ -300,10 +329,14 @@ Things to look for to make sure code is legit:
 					loadPage("pageBalances");
 					
 				}, function() {
-					//see if contains plain text keysFile
-					document.getElementById("wif").value=data;
-					closeWindows(true);
-					
+					checkOldGoWallet(data).then(function(xprv) {
+						document.getElementById("wif").value=xprv;
+						loadPage("pageBalances");
+					}, function() {
+						//see if contains plain text keysFile
+						document.getElementById("wif").value=data;
+						closeWindows(true);
+					});
 				});
 			}
 			reader.onerror = function() {
@@ -342,7 +375,13 @@ Things to look for to make sure code is legit:
 	}
 	document.getElementById('export').addEventListener('click',exportKeys);
 	
-	
+	var getDataFromXPrv=function(xprv) {
+		return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
+			bip39.getHDKeyFromXPrv(xprv);
+		
+		
+		});
+	}
 	var getDataFromSeed=function(seedPhrase) {
 		return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
 				/*Resolve:
@@ -367,7 +406,6 @@ Things to look for to make sure code is legit:
 			if (errorText!==false) {
 				return reject(errorText);
 			}
-			
 			
 				
 			/* ************************
