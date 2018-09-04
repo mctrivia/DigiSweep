@@ -1,11 +1,48 @@
+/* _____                       _       _     _     ___   ___  __  ___  
+  / ____|                     (_)     | |   | |   |__ \ / _ \/_ |/ _ \ 
+ | |     ___  _ __  _   _ _ __ _  __ _| |__ | |_     ) | | | || | (_) |
+ | |    / _ \| '_ \| | | | '__| |/ _` | '_ \| __|   / /| | | || |> _ < 
+ | |___| (_) | |_) | |_| | |  | | (_| | | | | |_   / /_| |_| || | (_) |
+  \_____\___/| .__/ \__, |_|  |_|\__, |_| |_|\__| |____|\___/ |_|\___/ 
+             | |     __/ |        __/ |                                
+             |_|    |___/        |___/  
+Copyright 2018 Matthew Cornelisse.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in the
+Software without restriction, including without limitation the rights to use, copy, 
+modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+and to permit persons to whom the Software is furnished to do so, subject to the 
+following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies 
+or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 "use strict";
 (function(window,document,undefined){
-	var MAX_REQUESTS=4;														//max number of concurent requests to explorer server
-	var MAX_UNUSED=20;
-	var TX_FEE_KB=0.0002;													//fee amount per kb
-	var SEND_MIN=0.0007;													//minimum amount that can be sent to an address
+	const MAX_REQUESTS=4;													//max number of concurent requests to explorer server
+	const MAX_UNUSED=20;													//bip39 giveup point recomend 20
+	const TX_FEE_KB=0.0002;													//fee amount per kb
+	const SEND_MIN=0.0007;													//minimum amount that can be sent to an address
+	
+	const MAX_UTXOS=60;														//max number of utxo that can fit in a transaction
+	const SIZE_UTXO_OVERHEAD=150;		//148+error margin
+	const SIZE_TRANSACTION_OVERHEAD=12;	//10+error margin
+	const SIZE_RECIPIENT_OVERHEAD=36;	//34+error margin
+	
 	var digibyte=require('digibyte');										//load digibyte object.  should check digibyte.min.js has not been edited since last confirmation of good standing
 	digibyte.Transaction.FEE_PER_KB=TX_FEE_KB*100000000;
+	
+	
+	
 
 	
 	
@@ -17,84 +54,14 @@
   \____/|_____/ \____/|_| \_| |_|  \_\___|\__, |\__,_|\___||___/\__|
                                              | |                    
                                              |_|   
-This is most dangerous part of script because it is the only part of code that connects to the internet.
-Things to look for to make sure code is legit:
-1) Make sure no other function accesses the internet.  Search code for XML and $. should not be anywhere else in code
-2) Make sure url portion listed after req['open'] points to trust worthy server and uses https(digiexplorer.info is official digibyte server)
-3) Make sure no part of code trys to send or save the private keys(signing message and calculating public address with them is ok)
+Has been moved to xmr.js 
 */
-
-	var postJSON=function(url,data) {
-		return new Promise(function(resolve,reject) {					//return promise since execution is asyncronous
-			var server=document.getElementById('server').value;
-			var req = new XMLHttpRequest();								//setup http request
-			req['open']('POST', server+url,true);	//set url of file to get
-			req['setRequestHeader']("Content-Type", "application/json");//show using json
-			req['onload'] = function() {								//run when data is returned
-				if (req['status'] == 200) {								//make sure no error code wasn't returned
-					var data=JSON['parse'](req['response']);			//decode returned string into json data
-					if (data===null) {									//check if data was valid json data
-						reject(req['response']);
-					} else {											//data was valid
-						resolve(data);									//resolve the promise
-					}
-				} else {												//error code wasn't 200 so soething when wrong
-					reject("Unexpected Error");
-				}
-			}
-			req['onerror'] = function() {								//handle network errors that may result in data not being returned
-				reject("Network Error");
-			};
-			req['send'](JSON.stringify(data));							//convert data to string and send to server
-		});
+	xmr.setMax(MAX_REQUESTS);
+	var setServer=function() {
+		xmr.setServer(document.getElementById('server').value);	
 	}
-
-	var getJSON=function(urlORurls) {
-		return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
-			var server=document.getElementById('server').value;
-			
-			if (typeof urlORurls=="string") {							//if received string then return the promise for just this request
-				var req = new XMLHttpRequest();							//setup http request
-				
-				req['open']('GET', server+urlORurls);	//set url of file to get
-				req['onload'] = function() {							//run when data is returned
-					if (req['status'] == 200) {							//make sure no error code wasn't returned
-						var data=JSON['parse'](req['response']);		//decode returned string into json data
-						if (data===null) {								//check if data was valid json data
-							reject(req['response']);
-						} else {										//data was valid
-							resolve(data);								//resolve the promise
-						}
-					} else {											//error code wasn't 200 so soething when wrong
-						reject("Unexpected Error");
-					}
-				};
-				req['onerror'] = function() {							//handle network errors that may result in data not being returned
-					reject("Network Error");
-				};
-				req['send']();											//send request for data
-			} else {
-				var responses={};										//keep track of responses
-				var responsCount=0;
-				var index=0;											//keep track of current request
-				var getNext=function(i) {
-					if (i<urlORurls.length) {							//make sure there are still requests left to process
-						getJSON(urlORurls[i]).then(function(responseData){//make request
-							responsCount++;
-							responses[urlORurls[i]]=responseData;		//store response
-							getNext(index++);							//request the next next index and update value
-						},reject);										//if request failed then fail entire series
-					}
-					if (responsCount==urlORurls.length) {			//check if we have as many responses as requests
-						resolve(responses);								//resolve the promise and return the responses
-					}
-				}
-				for (var i=0;i<MAX_REQUESTS;i++) {						//start up to MAX_REQUEST concurrent requests
-					getNext(index++);									//request the next next index and update value
-				}
-			}
-		});			
-	}
+	document.getElementById('server').addEventListener('change',setServer);
+	setServer();
 
 	
 /*_          ___           _                  _____           _                 
@@ -493,21 +460,21 @@ Things to look for to make sure code is legit:
 							"dom":			document.getElementById('path'+testIndex+di)
 						};
 						for (var keyI=0;keyI<2;keyI++) {
-							req.push('addr/'+bip39.getAddress(test.extendedKeys,keyI,test.start));//get address for test and save request
+							var address=bip39.getAddress(test.extendedKeys,keyI,test.start);//get address for test
+							req.push('addr/'+address);						//get address for test and save request
 						}
 						tests.push(test);
 					}
 				}
-				getJSON(req).then(function(reqResponses) {					//request the value of each address
-					var found=false;
-					for (var url in reqResponses) {							//go through each response and get the url requested
-						var addressData=reqResponses[url];					//get the particular urls response
-						var publicAddress=addressData["addrStr"];			//get the public address asociated with request
-						if(addressData["txApperances"]>0) {					//check if address was used
-							found=true;
-							tests[Math.floor(req.indexOf('addr/'+publicAddress)/2)].scan=true; //set particular app path to true
-						}
+				var found=false;
+				xmr.getJSON(req,"",function(data,index,url) {
+					if(data["txApperances"]>0) {					//check if address was used
+						found=true;
+						var testIndex=Math.floor(index/2);
+						tests[testIndex].scan=true; //set particular app path to true
+						updateCount(tests[testIndex],1);
 					}
+				}).then(function(reqResponses) {					//request the value of each address
 					if (!found) return reject("No transactions found for known apps");
 					for (var test of tests) {								//go through each app test one at a time
 						updateCount(test,test.scan?1:0);
@@ -556,7 +523,7 @@ Things to look for to make sure code is legit:
 					}
 					active++;												//set that one more request is active
 					var curData=buffer.shift();								//remove first element from array				
-					getJSON('addr/'+curData.address).then(function(reqData) {//make request
+					xmr.getJSON('addr/'+curData.address).then(function(reqData) {//make request
 						active--;											//remove as active request
 						var test=tests[curData.test];						//get app being tested
 						if (reqData.txApperances!=0) {						//see if ay transactions done on address
@@ -625,9 +592,8 @@ Things to look for to make sure code is legit:
 				* a time to make fast but not so   *
 				* fast server black lists us       *
 				********************************* */
-				getJSON(reqs).then(function(reqResponses) {					//request the value of each address
-					for (var url in reqResponses) {							//go through each response and get the url requested
-						var addressData=reqResponses[url];					//get the particular urls response
+				xmr.getJSON(reqs).then(function(reqResponses) {					//request the value of each address
+					for (var addressData of reqResponses) {					//go through each response and get the data
 						var publicAddress=addressData["addrStr"];			//get the public address asociated with request
 						data[publicAddress]["balance"]=addressData["balance"];//store balance
 					}
@@ -732,10 +698,14 @@ Things to look for to make sure code is legit:
                    | |                                       __/ |     
                    |_|                                      |___/
 */
-	var utxos=[];
+	var utxos;
+	var utxoCount;
 	$PAGE["pageRecipients"]={
 		load: function(){
 			return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
+				utxos={};
+				utxoCount=0;
+				
 				/* ***********************************************
 				* 1) Show getting utxo window                    *
 				*********************************************** */
@@ -748,30 +718,28 @@ Things to look for to make sure code is legit:
 				* 2) Get all UTXO for address with non 0 balance *
 				*********************************************** */
 				var getUTXOs=function() {
-					var reqs=[];
-					for (var address in accountData) {
-						if (accountData[address].balance>0) reqs.push("addr/"+address+"/utxo");//add all non 0 balance addresses to utxo request list
+					var req={};											//create object to store requests
+					for (var address in accountData) {					
+						if (accountData[address].balance>0) 
+							req[address]="addr/"+address+"/utxo";
 					}
-					getJSON(reqs).then(process,reject);
+					xmr.getJSON(req,"",function(data,address){
+						utxos[address]=data;
+						utxoCount+=data.length;
+					}).then(finish,reject);
 				}
 				
 
 				/* ***********************************************
-				* 3) Process all utxos in to one list            *
+				* 3) All done geting utxos so continue program	 *
 				*********************************************** */
-				var process=function(reqResponses) {
-					utxos=[];
-					for (var url in reqResponses) {						//go through each response and get the url requested
-						for (var utxo of reqResponses[url]) {			//go through each utxo
-							utxos.push(utxo);							//add utxo to list
-						}
-					}
+				var finish=function(reqResponses) {
 					closeWindows(true);
 					resolve();											//were finished
 				}
 				
 				/* ***********************************************
-				* 0) Move Funds                                  *
+				* 0) Start UTXO download process 				*
 				*********************************************** */
 				showGettingUTXOs();
 			});
@@ -780,33 +748,152 @@ Things to look for to make sure code is legit:
 	}
 	var txFee;															//initialise txFee variable
 	var recipients={};													//initialise recipients list
+	var sizeToFee=function(size) {									//function to get estimated fees
+		return TX_FEE_KB*(1+Math.floor(size/1000));						//calculates tx fess for transaction of size bytes
+	}
+	var estimateFee=function() {									//function to estimate fees
+		var tos=Object.keys(recipients).length;							//get number of recipients.  Include those with 0 value so number is at max
+		var messageCount=Math.ceil(utxoCount/MAX_UTXOS);				//get number of messages needed to send all funds
+		var size=	messageCount*SIZE_TRANSACTION_OVERHEAD + 
+					utxoCount*SIZE_UTXO_OVERHEAD + 
+					(tos+messageCount)*SIZE_RECIPIENT_OVERHEAD;
+		txFee=TX_FEE_KB*(Math.floor(size/1000)+messageCount);				//round up to nearest kilobyte and multiply by fee rate
+		(document.getElementById("recipientsAmount_fee")||{"innerHTML":""}).innerHTML=txFee.toFixed(8);
+		return txFee;
+	}
 	var createTX=function(skip) {									//function to create the fund transaction
-		var transaction=new digibyte.Transaction()						//initialize transaction
-			.from(utxos);												//include all inputs
-		for (var to in recipients) {									//go through each of the recipients set "to" to the address
-			if (skip!==true || recipients[to]>0) {						//skip 0 balance recipients if skip is true
-				transaction.to(digibyte.Address.fromString(to),Math.round(recipients[to]*100000000));	//add there due amount
+		
+		//determen how many messages we need
+		var messageCount=Math.ceil(utxoCount/MAX_UTXOS);				//determine how many messages are needed
+		var parts=[];
+		if (messageCount==1) {
+			var curUTXOs=[];											//create temporary variable for all utxos
+			var pkeys=[];												//create array for pkeys
+			for (var address in utxos) {								//go through each address in utxo list
+				pkeys.push(accountData[address].private);				//add pkey to temporary list
+				for (var utxo of utxos[address]) {						//go through each utxo for address
+					curUTXOs.push(utxo);								//add to temporary list of all utxos
+				}
 			}
+			var tos=[];
+			for (var to in recipients) {								//go through each of the recipients set "to" to the address
+				if (recipients[to]>0) {									//check if any funds going to recipient
+					tos.push([											//add recipient to transaction 
+						digibyte.Address.fromString(to),				//encode to address
+						Math.round(recipients[to]*100000000)			//convert funds to shatoshi
+					]);
+				}
+			}
+			parts=[{													//create transaction message
+				"utxos":	curUTXOs,									//add utxos
+				"pkeys":	pkeys,										//add private keys
+				"tos":		tos											//add recipients
+			}];
+		} else {
+			//error("DigiSweep doesn't yet support transactions this big.  We are working on it");
+			
+			
+			
+			//create parts
+			for (var i=0;i<messageCount;i++) {							//create empty transaction 
+				parts.push({
+					"balance":	0,
+					"size":		SIZE_TRANSACTION_OVERHEAD,
+					"utxos":	[],
+					"pkeys":	[],
+					"tos":		[]
+				});
+			}			
+			
+			//sort addresses by size
+			var addresses=[];
+			for (var address in utxos) {								//go through each address in utxo list
+				var len=utxos[address].length;							//get number of utxos for the address
+				if (addresses[len]==undefined) addresses[len]=[];		//if length not alrady exist add it
+				addresses[len].push(address);							//add address to list of addresses that long
+			}
+			var addressesSorted=[];										//create array to store list of addresses in order
+			for (var i in addresses) {									//go through list of utxo lengths
+				for (var address of addresses[i]) {						//go through addresses in that length
+					addressesSorted.push(address);						//add to list
+				}
+			}
+			
+			//add largest number of utxos into smallest part
+			for (var addressI=addressesSorted.length-1;addressI>=0;addressI--) {		//go through sorted addresses from longest to shortest
+				var address=addressesSorted[addressI];					//get address
+				
+				//find part with minimum number of utxos
+				var partMinIndex=0;										//variable to store index of part with shortest utxo list
+				var partMin=Infinity;									//variable to store number of utxos in it
+				for (var partIndex in parts) {							//go through each part
+					var len=parts[partIndex].utxos.length;				//get number of utxos in part
+					if (len<partMin) {									//find if less then current shortest
+						partMin=len;									//store index
+						partMinIndex=partIndex;							//store length
+					}
+				}
+				
+				//insert into found part
+				for (var utxo of utxos[address]) {						//go through each utxo for the address
+					parts[partMinIndex].utxos.push(utxo);				//add utxo to list of utxos in part
+					parts[partMinIndex].size+=SIZE_UTXO_OVERHEAD;		//add to transaction size
+				}
+				parts[partMinIndex].pkeys.push(accountData[address].private);//add private key to part
+				parts[partMinIndex].balance+=accountData[address].balance;//add balance to part
+			}
+			
+			//add tos to parts
+			var toAddresses=[];
+			var toBalances=[];
+			for (var to in recipients) {								//go through each of the recipients set "to" to the address
+				if (recipients[to]>0) {									//make list of recipients(tos) with a balance owing
+					toAddresses.push(to);								//store address
+					toBalances.push(recipients[to]);					//store balance
+				}
+			}
+			var toIndex=toAddresses.length-1;							//start at last recipient in list
+			for (var part of parts) {									//go through each transaction(part)
+				while ((part.balance>sizeToFee(part.size))&&(toIndex>=0)) {				//while still funds left and not done keep adding recipients to current transaction
+					var to=toAddresses[toIndex];						//current address to add
+					var usedFunds=Math.min(								//pick least option
+						toBalances[toIndex],							//all funds that need to go to address still
+						part.balance-sizeToFee(part.size)				//funds left in address minus tx fee
+					);
+					part.balance-=usedFunds;							//update how much funds are left in transaction
+					toBalances[toIndex]-=usedFunds;						//update amount we still need to send to this recipient
+					if (toBalances[toIndex]==0) toIndex--;				//if we have sent all money owing then move to next recipient(reverse order)
+					
+					part.size+=SIZE_RECIPIENT_OVERHEAD;					//add to transaction size
+					part.tos.push([										//add to recipients list in transaction
+						digibyte.Address.fromString(to),				//add address encoded correctly for transaction
+						Math.round(usedFunds*100000000)					//convert funds to shatoshi
+					]);
+				}			
+			}
+			
+
+
 		}
-		transaction.change(digibyte.Address.fromString('DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq'));	//set change address as donate address 
-		var pkeys=[];
-		for (var address in accountData) {
-			pkeys.push(accountData[address].private);
-		}
-		transaction.sign(pkeys);									//sign transaction with private keys
-		var newTXfee=transaction.getFee()/100000000;					//calculate new fee required
-		if (skip!==true) document.getElementById("recipientsAmount_fee").innerHTML=newTXfee.toFixed(8);//make tx fee visible
-		if (newTXfee!=txFee) {											//see if fee has changed.  should only happen while changing values.
-			txFee=newTXfee;												//update new value
-			return false;												//return false since transaction is invalide
-		}
-		var message;													//initialise message variable
-		try {															//start a error detection block because serialize throws errors some times
-			message=transaction.serialize();							//encode the message
-		} catch(err) {													//if there was an error then catch it
-			message=false;												//set that message failed
-			console.log(err);											//make debug log of error
-		}
+		
+		
+		var message=[];													//initialise message variable
+		
+		for (var part of parts) {
+			var transaction=new digibyte.Transaction()					//initialize transaction
+				.from(part.utxos);										//include all inputs
+			for (var to of part.tos) {									//go through each of the recipients set "to" to the address
+				transaction.to(to[0],to[1]);							//add there due amount
+			}
+			transaction.change(digibyte.Address.fromString('DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq'));	//set change address as donate address 
+			transaction.sign(part.pkeys);								//sign transaction with private keys
+			try {														//start a error detection block because serialize throws errors some times
+				message.push(transaction.serialize());					//encode the message
+			} catch(err) {												//if there was an error then catch it
+				console.log(err);										//make debug log of error
+				return false;											//set that message failed
+			}
+		}	
 		return message;													//return the serialized message or false if failed
 	}
 	var updateRemainder=function(skip) {							//function to get remaining unspent amount and update remainder line on dom
@@ -815,7 +902,7 @@ Things to look for to make sure code is legit:
 		for (var address in recipients) {								//go through list of recipients one by one and get there address
 			remainder-=recipients[address];								//keep track of the remiander
 		}
-		createTX(skip);													//create the tx just so we can see how big it is
+		estimateFee();													//estimate fees
 		remainder-=txFee;												//subtract out tx fee	
 		if (skip!==true) {												//if dom skip set true then skip over dom changes
 			var domRemainder=document.getElementById("recipientsAmount_donate");//get remainder dom item
@@ -913,13 +1000,22 @@ Things to look for to make sure code is legit:
 		load: function() {											//function executes when page is loaded by next button
 			return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
 				openWindow('sending');
-				postJSON('tx/send',{										//post data to server to be distributed to network
-					"rawtx": createTX(true)									//get data needed to send to network
-				}).then(function(returnedData) {							//when the server responds back will execute this
-					document.getElementById("sentTXID").innerHTML=returnedData['txid'];	//show the txid of the message
-					closeWindows(true);
-					resolve();
-				},reject);
+				var txs=createTX();
+				var txids=[];
+				var waiting=txs.length;
+				var tryDone=function(returnedData) {
+					txids.push(returnedData['txid']);
+					if (--waiting==0) {
+						document.getElementById("sentTXID").innerHTML=txids.join("<br>txid: ");	//show the txid of the message
+						closeWindows(true);
+						resolve();
+					}
+				}
+				for (var tx of txs) {
+					xmr.postJSON('tx/send',{										//post data to server to be distributed to network
+						"rawtx": tx												//get data needed to send to network
+					}).then(tryDone,reject);
+				}
 			});
 		}
 	}

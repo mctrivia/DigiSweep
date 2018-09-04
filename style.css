@@ -3,6 +3,7 @@
 .bip39dots{
 	height:14px;
 	width:70px;
+	display:inline-block;
 }
 
 #exportLink{
