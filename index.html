@@ -81,6 +81,17 @@ only signatures proving you know them.
 <textarea id="passwords" cols="40" rows="5"></textarea><br>
 <input type="submit" id="passwordTry" value="Try Passwords">&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit" id="passwordFail" value="Cancel">
 </div>
+<div id="window_password2" class="window">
+<h1>Password Protected Input:</h1>
+<h3 id="password2_key"></h3>
+<h3>Please provide a list of passwords we should try. 1 per line.</h3>
+<textarea id="passwords2" cols="40" rows="5"></textarea><br>
+<input type="submit" id="passwordTry2" value="Try Passwords">&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit" id="passwordFail2" value="Cancel">
+</div>
+<div id="window_progress" class="window">
+<h1>Decoding Key</h1>
+<h3 id="progress">0%</h3>
+</div>
 
 <div id="window_error" class="window">
 <h1>Error:</h1>
@@ -88,6 +99,7 @@ only signatures proving you know them.
 <input type="button" class="close" value="OK">
 </div>
 
+<script src="bip38d.js"></script>
 <script src="digibyte.min.js"></script>
 <script src="bip39.js"></script>
 <script src="gibberish-aes.min.js"></script>

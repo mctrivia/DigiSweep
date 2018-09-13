@@ -636,14 +636,59 @@ Has been moved to xmr.js
 					}
 				}
 				
-				/* *******************************
-				* 3) Check if valid private keys *
-				******************************* */
-				for (var key of privateKeys) {								//go through list of keys and see if they are all valid
-					if (!digibyte.PrivateKey.isValid(key)) 					//looks to see if key is valid
-						return reject("Invalid Private Key: "+key);					//if not valid then return error message(doesn't bother checking rest of keys)
+				/* ****************************************************
+				* 3) Check if valid private keys and decode encrypted *
+				**************************************************** */
+				var i=privateKeys.length;
+				var testNext=function() {
+					i--;
+					if (privateKeys[i].substr(0,2)=="6P") {					//see if key is encrypted
+						document.getElementById("password2_key").innerHTML=privateKeys[i];
+						openWindow("password2");
+						var tryPasswords=function() {
+							var passwords=document.getElementById("passwords2").value.split("\n");
+							var last=passwords.length-1;
+							var passI=-1;
+							function tryNextPass() {
+								var pass=passwords[++passI];
+								bip38decode(privateKeys[i],pass,function(percent) {
+									var pdone=Math.round((100*passI+percent)/(passwords.length))+"%";
+									document.getElementById("progress").innerHTML=pdone;
+									
+								}).then(function(pKey){
+									privateKeys[i]=pKey;
+									i++;
+									testNext();
+								},function() {
+									console.log('Decode Failed');
+									if (passI!=last) {
+										tryNextPass();
+									} else {
+										openWindow("password2");
+									}
+								});
+								
+							}
+							tryNextPass();
+						}
+						document.getElementById("passwordTry2").addEventListener('click',function() {
+							openWindow("progress");
+							setTimeout(tryPasswords,10);
+						});
+						document.getElementById("passwordFail2").addEventListener('click',reject);
+						
+					} else {
+						if (!digibyte.PrivateKey.isValid(privateKeys[i])) 		//looks to see if key is valid
+							return reject("Invalid Private Key: "+privateKeys[i]);//if not valid then return error message(doesn't bother checking rest of keys)
+						if (i==0) {
+							resolve();
+						} else {
+							testNext();
+						}
+					}
 				}
-				resolve();												//no errors found so return false
+				testNext();
+				
 			});
 		},
 		load: function() {											//function executes when page is loaded by next button
