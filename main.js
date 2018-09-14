@@ -810,6 +810,9 @@ Has been moved to xmr.js
 		
 		//determen how many messages we need
 		var messageCount=Math.ceil(utxoCount/MAX_UTXOS);				//determine how many messages are needed
+		console.log("TXs needed: ",messageCount);
+		console.log("UTXO count: ",utxoCount);
+		
 		var parts=[];
 		if (messageCount==1) {
 			var curUTXOs=[];											//create temporary variable for all utxos
@@ -1046,6 +1049,7 @@ Has been moved to xmr.js
 			return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
 				openWindow('sending');
 				var txs=createTX();
+				if (txs===false) return reject("Error forming request");
 				var txids=[];
 				var waiting=txs.length;
 				var tryDone=function(returnedData) {
