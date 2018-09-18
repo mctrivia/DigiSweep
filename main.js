@@ -621,7 +621,8 @@ Has been moved to xmr.js
 				/* ******************
 				* 1) Process Input  *
 				****************** */
-				privateKeys=document.getElementById("wif").value;			//get what user typed into input box
+				privateKeys=document.getElementById("wif").value.trim();	//get what user typed into input box
+				if (privateKeys=="") return reject("No Input Provided");	//check that something was entered
 				privateKeys=privateKeys.replace(/\s/g,",");					//replace all white space with ,
 				privateKeys=privateKeys.split(",").filter(function(e){return e});//split up into array of keys and remove duplicates
 				
@@ -852,24 +853,26 @@ Has been moved to xmr.js
 					"tos":		[]
 				});
 			}			
+
+//utxos[address][i]
 			
-			//sort addresses by size
-			var addresses=[];
-			for (var address in utxos) {								//go through each address in utxo list
-				var len=utxos[address].length;							//get number of utxos for the address
-				if (addresses[len]==undefined) addresses[len]=[];		//if length not alrady exist add it
-				addresses[len].push(address);							//add address to list of addresses that long
-			}
-			var addressesSorted=[];										//create array to store list of addresses in order
-			for (var i in addresses) {									//go through list of utxo lengths
-				for (var address of addresses[i]) {						//go through addresses in that length
-					addressesSorted.push(address);						//add to list
-				}
-			}
+			//copy utxo table
+			var tempUTXOs=JSON.parse(JSON.stringify(utxos));
+			
 			
 			//add largest number of utxos into smallest part
-			for (var addressI=addressesSorted.length-1;addressI>=0;addressI--) {		//go through sorted addresses from longest to shortest
-				var address=addressesSorted[addressI];					//get address
+			var addressCount=Object.keys(tempUTXOs).length;
+			while (addressCount>0) {
+				//get longest address
+				var address;											//initialise address variable
+				var longest=0;											//length of longest utxo
+				for (var testAddress in tempUTXOs) {					//go through each address in utxos 1 at a time
+					var len=tempUTXOs[testAddress].length;				//get number of utxo for address
+					if (len>longest){									//see if longer then longest known
+						longest=len;									//record length
+						address=testAddress;							//record address
+					}
+				}
 				
 				//find part with minimum number of utxos
 				var partMinIndex=0;										//variable to store index of part with shortest utxo list
@@ -883,14 +886,16 @@ Has been moved to xmr.js
 				}
 				
 				//insert into found part
-				for (var utxo of utxos[address]) {						//go through each utxo for the address
+				while ((parts[partMinIndex].utxos.length<MAX_UTXOS)&&(tempUTXOs[address].length>0))  {//while there is sapce and something to add
+					var utxo=tempUTXOs[address].pop();					//remove utxo item from current address
 					parts[partMinIndex].utxos.push(utxo);				//add utxo to list of utxos in part
 					parts[partMinIndex].size+=SIZE_UTXO_OVERHEAD;		//add to transaction size
+					parts[partMinIndex].balance+=utxo.amount;			//add balance to part
 				}
+				if (tempUTXOs[address].length==0) addressCount--;		//mark as done if done
 				parts[partMinIndex].pkeys.push(accountData[address].private);//add private key to part
-				parts[partMinIndex].balance+=accountData[address].balance;//add balance to part
 			}
-			
+						
 			//add tos to parts
 			var toAddresses=[];
 			var toBalances=[];
@@ -926,7 +931,7 @@ Has been moved to xmr.js
 		
 		
 		var message=[];													//initialise message variable
-		
+		console.log(parts);
 		for (var part of parts) {
 			var transaction=new digibyte.Transaction()					//initialize transaction
 				.from(part.utxos);										//include all inputs
@@ -1049,7 +1054,7 @@ Has been moved to xmr.js
 			return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
 				openWindow('sending');
 				var txs=createTX();
-				if (txs===false) return reject("Error forming request");
+				if (txs===false) return reject("Error Forming Request");
 				var txids=[];
 				var waiting=txs.length;
 				var tryDone=function(returnedData) {
