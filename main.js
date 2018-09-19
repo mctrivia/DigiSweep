@@ -836,7 +836,8 @@ Has been moved to xmr.js
 			parts=[{													//create transaction message
 				"utxos":	curUTXOs,									//add utxos
 				"pkeys":	pkeys,										//add private keys
-				"tos":		tos											//add recipients
+				"tos":		tos,										//add recipients
+				"balance":	1											//add fake balance value to initialize change system on it
 			}];
 		} else {
 			//error("DigiSweep doesn't yet support transactions this big.  We are working on it");
@@ -938,7 +939,9 @@ Has been moved to xmr.js
 			for (var to of part.tos) {									//go through each of the recipients set "to" to the address
 				transaction.to(to[0],to[1]);							//add there due amount
 			}
-			transaction.change(digibyte.Address.fromString('DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq'));	//set change address as donate address 
+			if (part.balance>SEND_MIN) {
+				transaction.change(digibyte.Address.fromString('DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq'));	//set change address as donate address 
+			}
 			transaction.sign(part.pkeys);								//sign transaction with private keys
 			try {														//start a error detection block because serialize throws errors some times
 				message.push(transaction.serialize());					//encode the message
