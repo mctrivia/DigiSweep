@@ -31,7 +31,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	const MAX_REQUESTS=4;													//max number of concurent requests to explorer server
 	const MAX_UNUSED=20;													//bip39 giveup point recomend 20
 	const TX_FEE_KB=0.0002;													//fee amount per kb
-	const SEND_MIN=0.0007;													//minimum amount that can be sent to an address
+	const SEND_MIN=0.0025;													//minimum amount that can be sent to an address
 	
 	const MAX_UTXOS=60;														//max number of utxo that can fit in a transaction
 	const SIZE_UTXO_OVERHEAD=150;		//148+error margin
@@ -825,11 +825,13 @@ Has been moved to xmr.js
 				}
 			}
 			var tos=[];
+//			var balance=0;
 			for (var to in recipients) {								//go through each of the recipients set "to" to the address
 				if (recipients[to]>0) {									//check if any funds going to recipient
 					tos.push([											//add recipient to transaction 
 						digibyte.Address.fromString(to),				//encode to address
 						Math.round(recipients[to]*100000000)			//convert funds to shatoshi
+//						balance-=recipients[to];
 					]);
 				}
 			}
