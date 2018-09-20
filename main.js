@@ -808,7 +808,6 @@ Has been moved to xmr.js
 		return txFee;
 	}
 	var createTX=function(skip) {									//function to create the fund transaction
-		
 		//determen how many messages we need
 		var messageCount=Math.ceil(utxoCount/MAX_UTXOS);				//determine how many messages are needed
 		console.log("TXs needed: ",messageCount);
@@ -825,21 +824,18 @@ Has been moved to xmr.js
 				}
 			}
 			var tos=[];
-//			var balance=0;
 			for (var to in recipients) {								//go through each of the recipients set "to" to the address
-				if (recipients[to]>0) {									//check if any funds going to recipient
+				if (recipients[to]>=SEND_MIN) {							//check if any funds going to recipient
 					tos.push([											//add recipient to transaction 
 						digibyte.Address.fromString(to),				//encode to address
 						Math.round(recipients[to]*100000000)			//convert funds to shatoshi
-//						balance-=recipients[to];
 					]);
 				}
 			}
 			parts=[{													//create transaction message
 				"utxos":	curUTXOs,									//add utxos
 				"pkeys":	pkeys,										//add private keys
-				"tos":		tos,										//add recipients
-				"balance":	1											//add fake balance value to initialize change system on it
+				"tos":		tos											//add recipients
 			}];
 		} else {
 			//error("DigiSweep doesn't yet support transactions this big.  We are working on it");
@@ -898,33 +894,49 @@ Has been moved to xmr.js
 				if (tempUTXOs[address].length==0) addressCount--;		//mark as done if done
 				parts[partMinIndex].pkeys.push(accountData[address].private);//add private key to part
 			}
-						
-			//add tos to parts
+			
+			//compute number of recipients with meaningful balance
 			var toAddresses=[];
 			var toBalances=[];
 			for (var to in recipients) {								//go through each of the recipients set "to" to the address
-				if (recipients[to]>0) {									//make list of recipients(tos) with a balance owing
+				if (recipients[to]>=SEND_MIN) {									//make list of recipients(tos) with a balance owing
 					toAddresses.push(to);								//store address
 					toBalances.push(recipients[to]);					//store balance
 				}
 			}
+			
+			//compute donate so smart donation on edge cases can be done
+			var donateRemainding=updateRemainder();
+						
+			//add tos to parts
 			var toIndex=toAddresses.length-1;							//start at last recipient in list
+			var leftOver=0;												//define and set 0 value;
 			for (var part of parts) {									//go through each transaction(part)
-				while ((part.balance>sizeToFee(part.size))&&(toIndex>=0)) {				//while still funds left and not done keep adding recipients to current transaction
+				while (
+					(toIndex>=0)										//while not done
+					&& (part.balance>sizeToFee(part.size)+SEND_MIN)		//and while still funds left that can be sent
+					&& (leftOver==0)									//and there was no left overs as this only happens when we split a to between messages
+				) {	
 					var to=toAddresses[toIndex];						//current address to add
 					var usedFunds=Math.min(								//pick least option
 						toBalances[toIndex],							//all funds that need to go to address still
 						part.balance-sizeToFee(part.size)				//funds left in address minus tx fee
 					);
+					var leftOver=toBalances[toIndex]-usedFunds;
+					if ((leftOver>0) && (leftOver<SEND_MIN)) {			//see if split result in dust in second half
+						if (donateRemainding>=SEND_MIN) {				//see if we can use donate funds to make split work
+							usedFunds-=SEND_MIN;
+							donateRemainding-=SEND_MIN;
+						}
+					}
 					part.balance-=usedFunds;							//update how much funds are left in transaction
 					toBalances[toIndex]-=usedFunds;						//update amount we still need to send to this recipient
-					if (toBalances[toIndex]==0) toIndex--;				//if we have sent all money owing then move to next recipient(reverse order)
-					
 					part.size+=SIZE_RECIPIENT_OVERHEAD;					//add to transaction size
+					if (leftOver==0) toIndex--;							//update index if we used up funds
 					part.tos.push([										//add to recipients list in transaction
 						digibyte.Address.fromString(to),				//add address encoded correctly for transaction
 						Math.round(usedFunds*100000000)					//convert funds to shatoshi
-					]);
+					]);					
 				}			
 			}
 			
@@ -941,9 +953,7 @@ Has been moved to xmr.js
 			for (var to of part.tos) {									//go through each of the recipients set "to" to the address
 				transaction.to(to[0],to[1]);							//add there due amount
 			}
-			if (part.balance>SEND_MIN) {
-				transaction.change(digibyte.Address.fromString('DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq'));	//set change address as donate address 
-			}
+			transaction.change(digibyte.Address.fromString('DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq'));	//set change address as donate address 
 			transaction.sign(part.pkeys);								//sign transaction with private keys
 			try {														//start a error detection block because serialize throws errors some times
 				message.push(transaction.serialize());					//encode the message
