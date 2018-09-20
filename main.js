@@ -927,6 +927,8 @@ Has been moved to xmr.js
 						if (donateRemainding>=SEND_MIN) {				//see if we can use donate funds to make split work
 							usedFunds-=SEND_MIN;
 							donateRemainding-=SEND_MIN;
+						} else {
+							reject("Donation not high enough to fix transactions.  Try removing recipients or increasing donation.");
 						}
 					}
 					part.balance-=usedFunds;							//update how much funds are left in transaction
