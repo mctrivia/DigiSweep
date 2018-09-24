@@ -746,11 +746,13 @@ Has been moved to xmr.js
 */
 	var utxos;
 	var utxoCount;
+					
 	$PAGE["pageRecipients"]={
 		load: function(){
 			return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
 				utxos={};
 				utxoCount=0;
+				var unspendable=0;
 				
 				/* ***********************************************
 				* 1) Show getting utxo window                    *
@@ -770,8 +772,18 @@ Has been moved to xmr.js
 							req[address]="addr/"+address+"/utxo";
 					}
 					xmr.getJSON(req,"",function(data,address){
-						utxos[address]=data;
-						utxoCount+=data.length;
+						var usable=[];
+						for (var utxo of data) {
+							if (utxo["confirmationsFromCache"]) {
+								usable.push(utxo);
+							} else {
+								unspendable+=utxo["amount"];
+								accountData[address].balance-=utxo["amount"];		//reduce funds if any utxo where unspendable
+							}
+						}
+						
+						utxos[address]=usable;
+						utxoCount+=usable.length;
 					}).then(finish,reject);
 				}
 				
@@ -781,6 +793,10 @@ Has been moved to xmr.js
 				*********************************************** */
 				var finish=function(reqResponses) {
 					closeWindows(true);
+					if (unspendable>0) {
+						openWindow("unspendable");
+						document.getElementById("unspendableQuantity").innerHTML=unspendable;
+					}
 					resolve();											//were finished
 				}
 				
@@ -941,7 +957,7 @@ Has been moved to xmr.js
 			}
 		}
 		
-		
+		console.log(parts);
 		var message=[];													//initialise message variable		
 		for (var part of parts) {
 			var transaction=new digibyte.Transaction()					//initialize transaction
@@ -959,6 +975,7 @@ Has been moved to xmr.js
 				return false;											//just in case
 			}
 		}	
+		console.log(message);
 		return message;													//return the serialized message or false if failed
 	}
 	var updateRemainder=function(skip) {							//function to get remaining unspent amount and update remainder line on dom
@@ -1065,23 +1082,25 @@ Has been moved to xmr.js
 		load: function() {											//function executes when page is loaded by next button
 			return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
 				openWindow('sending');
-				var txs=createTX();
-				if (txs===false) return reject("Error Forming Request");
-				var txids=[];
-				var waiting=txs.length;
-				var tryDone=function(returnedData) {
-					txids.push(returnedData['txid']);
-					if (--waiting==0) {
-						document.getElementById("sentTXID").innerHTML=txids.join("<br>txid: ");	//show the txid of the message
-						closeWindows(true);
-						resolve();
+				setTimeout(function() {										//micro delay to 
+					var txs=createTX();
+					if (txs===false) return reject("Error Forming Request");
+					var txids=[];
+					var waiting=txs.length;
+					var tryDone=function(returnedData) {
+						txids.push(returnedData['txid']);
+						if (--waiting==0) {
+							document.getElementById("sentTXID").innerHTML=txids.join("<br>txid: ");	//show the txid of the message
+							closeWindows(true);
+							resolve();
+						}
 					}
-				}
-				for (var tx of txs) {
-					xmr.postJSON('tx/send',{										//post data to server to be distributed to network
-						"rawtx": tx												//get data needed to send to network
-					}).then(tryDone,reject);
-				}
+					for (var tx of txs) {
+						xmr.postJSON('tx/send',{										//post data to server to be distributed to network
+							"rawtx": tx												//get data needed to send to network
+						}).then(tryDone,reject);
+					}
+				},10);
 			});
 		}
 	}
