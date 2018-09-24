@@ -852,8 +852,6 @@ Has been moved to xmr.js
 					"tos":		[]
 				});
 			}			
-
-//utxos[address][i]
 			
 			//copy utxo table
 			var tempUTXOs=JSON.parse(JSON.stringify(utxos));
@@ -910,8 +908,8 @@ Has been moved to xmr.js
 						
 			//add tos to parts
 			var toIndex=toAddresses.length-1;							//start at last recipient in list
-			var leftOver=0;												//define and set 0 value;
 			for (var part of parts) {									//go through each transaction(part)
+				var leftOver=0;											//define and set 0 value;
 				while (
 					(toIndex>=0)										//while not done
 					&& (part.balance>sizeToFee(part.size)+SEND_MIN)		//and while still funds left that can be sent
@@ -928,7 +926,7 @@ Has been moved to xmr.js
 							usedFunds-=SEND_MIN;
 							donateRemainding-=SEND_MIN;
 						} else {
-							reject("Donation not high enough to fix transactions.  Try removing recipients or increasing donation.");
+							throw new Error("Donation not high enough to fix transactions.  Try removing recipients or increasing donation.");
 						}
 					}
 					part.balance-=usedFunds;							//update how much funds are left in transaction
@@ -941,14 +939,10 @@ Has been moved to xmr.js
 					]);					
 				}			
 			}
-			
-
-
 		}
 		
 		
-		var message=[];													//initialise message variable
-		console.log(parts);
+		var message=[];													//initialise message variable		
 		for (var part of parts) {
 			var transaction=new digibyte.Transaction()					//initialize transaction
 				.from(part.utxos);										//include all inputs
@@ -961,7 +955,8 @@ Has been moved to xmr.js
 				message.push(transaction.serialize());					//encode the message
 			} catch(err) {												//if there was an error then catch it
 				console.log(err);										//make debug log of error
-				return false;											//set that message failed
+				throw new Error("Failed to generate transaction.");		//set that message failed
+				return false;											//just in case
 			}
 		}	
 		return message;													//return the serialized message or false if failed
