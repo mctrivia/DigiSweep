@@ -222,13 +222,23 @@ Has been moved to xmr.js
 			var tryPasswords=function() {
 				var passwords=document.getElementById("passwords").value.split("\n");
 				for (var pass of passwords) {
-					console.log(pass,jsonData);
 					try {
 						var decoded=JSON.parse(sjcl.decrypt(pass, data));
 						console.log(decoded);
+						
+						return resolve(decoded["xPrivKey"]);
+						/*
 						if (decoded["mnemonic"]!=undefined) {		//may need to use xPrivKey
 							return resolve(decoded["mnemonic"]);	
 						}
+						*/
+						
+						
+						
+						
+						
+						
+						
 					} catch(e) {
 					}
 				}
@@ -341,12 +351,82 @@ Has been moved to xmr.js
 		openWindow('export');
 	}
 	document.getElementById('export').addEventListener('click',exportKeys);
-	
 	var getDataFromXPrv=function(xprv) {
 		return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
-			bip39.getHDKeyFromXPrv(xprv);
-		
-		
+			/* ********************
+			* 1) Show Wait Window *
+			******************** */
+			var showWait=function() {
+				openWindow("wait");
+				setTimeout(checkPath,10);			
+			};
+			
+			/* ***********************************
+			* 2) Start check of derivative paths *
+			*********************************** */
+			var tests=[];
+			var checkPath=function() {
+				for (var di=0;di<2;di++) {
+					tests.push({
+						"extendedKeys":	bip39.getHDKeyFromXPrv(xprv,"m/44'/0'/0'/"+di),
+						"start":		"D",
+						"max":			0,
+						"giveUp":		MAX_UNUSED,
+						"type":			(di==0?'input':'change')
+					});
+				}
+				for (var testIndex in tests) {							//go through each app test one at a time
+					for (var i=0;i<MAX_UNUSED;i++) add(testIndex);	//add first MAX_UNUSED addresses to buffer if it should
+				}					
+			};
+			
+			/* **********************
+			* 3) Buffer Get        *
+			********************** */
+			var data={};
+			var buffer=[];
+			var active=0;
+			var add=function(testIndex) {
+				var test=tests[testIndex];
+				var keyI=test.max++;
+				console.log(bip39.getAddress(test.extendedKeys,keyI,test.start));
+				buffer.push({
+					"test":testIndex,
+					"index":keyI,
+					"address":bip39.getAddress(test.extendedKeys,keyI,test.start),
+					"private":bip39.getPrivate(test.extendedKeys,keyI)
+				});
+				get();
+			}
+			var get=function() {
+				if (active>=MAX_REQUESTS) return;						//don't start if already max active
+				if (buffer.length==0) {
+					if (active==0) return resolve(data); 				//found everything so resolve promise
+					return;												//no room to get another so cancel
+				}
+				active++;												//set that one more request is active
+				var curData=buffer.shift();								//remove first element from array				
+				xmr.getJSON('addr/'+curData.address).then(function(reqData) {//make request
+					active--;											//remove as active request
+					var test=tests[curData.test];						//get app being tested
+					if (reqData.txApperances!=0) {						//see if ay transactions done on address
+						test.giveUp=MAX_UNUSED;							//if used then reset giveup counter
+						data[curData.address]={							//store returned data
+							"type":	test.type,
+							"balance":reqData.balance,
+							"private":curData.private
+						};
+					}
+					get();												//start next buffer read
+					if (--test.giveUp>0) add(curData.test);				//if we haven't failed enough times to giveup then add another attempt
+				},reject);
+			}
+						
+			/* *******************
+			* 0) Start           *
+			******************* */
+			showWait();
+			
 		});
 	}
 	var getDataFromSeed=function(seedPhrase) {
@@ -612,6 +692,7 @@ Has been moved to xmr.js
 	
 	var privateKeys;
 	var isSeedPhrase;
+	var isXPrv;
 	var accountData={};													//initialise private key list(never leaves this page or stored)
 	$PAGE["pageBalances"]={
 		valid: function() {											//function executes to validate key inputs returns false if no errors.
@@ -635,6 +716,11 @@ Has been moved to xmr.js
 						isSeedPhrase=true;									//is likely seed phrase
 						return resolve();										//mark as valid because don't have validity check yet
 					}
+				}
+				isXPrv=false;
+				if ((privateKeys.length==1)&&(privateKeys[0].substr(0,4)=="xprv")) {
+					isXPrv=true;
+					return resolve();
 				}
 				
 				/* ****************************************************
@@ -694,7 +780,22 @@ Has been moved to xmr.js
 		},
 		load: function() {											//function executes when page is loaded by next button
 			return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
-				(isSeedPhrase?getDataFromSeed:getDataFromKeys)(privateKeys).then(function(data) {;	//executes apropraite data collection helper
+				
+				/* *****************************************
+				* 1) Determine what type of keys inputed   *
+				***************************************** */
+				var decode=function() {
+					if (isXPrv) {
+						getDataFromXPrv(privateKeys[0]).then(finish,reject);						
+					} else {
+						(isSeedPhrase?getDataFromSeed:getDataFromKeys)(privateKeys).then(finish,reject);	//executes apropraite data collection helper
+					}
+				}
+				
+				/* *************************
+				* 2) Process all addresses *
+				************************* */				
+				var finish=function(data) {
 					/*
 						data={
 							address: {
@@ -730,7 +831,13 @@ Has been moved to xmr.js
 					closeWindows(true);										//close any open windows and remove shadow
 					resolve();												//resolve the promise(we are done)
 					
-				},reject);
+
+				}
+				
+				/* **************
+				* 0) Initialize *
+				************** */
+				decode();
 			});
 		}
 	}
