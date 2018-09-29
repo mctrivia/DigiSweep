@@ -445,6 +445,8 @@ Has been moved to xmr.js
 				*/
 			
 			seedPhrase=seedPhrase.join(" ");							//recombine seed phrase into a string
+			var keyData={};
+				
 			
 			/* ************************
 			* Check Seed Phrase       *
@@ -492,6 +494,10 @@ Has been moved to xmr.js
 				}
 				*/
 			];
+			var sitePaths=[
+				"m/13'/2109410886'/21100317'/1093522950'/1777795832'",	//digibyteprojects.com
+				"m/13'/19...."	//orlib.org
+			];
 			
 			
 			/* ************************
@@ -506,6 +512,7 @@ Has been moved to xmr.js
 					html+='<div class="pathsRow"><div class="pathsCell">'+testData.name+' Input</div><div class="pathsCell" id="path'+i+'0">Testing</div></div>';
 					html+='<div class="pathsRow"><div class="pathsCell">'+testData.name+' Change</div><div class="pathsCell" id="path'+i+'1">Testing</div></div>';
 				}
+				html+='<div class="pathsRow"><div class="pathsCell">Common DigiID Paths</div><div class="pathsCell" id="pathDigiID">Testing</div></div>';
 				document.getElementById('pathsTable').innerHTML=html;
 				setTimeout(quickCheck,10);
 			}
@@ -515,11 +522,13 @@ Has been moved to xmr.js
 			* scans first 2 incoming,   *
 			* and 2 change addresses    *
 			************************** */
+			var active=1;													//initialise active count as 1 because DigiID requests are not done as part of normal buffer
 			var updateCount=function(test,count) {
 				test.dom.innerHTML='Found: '+count+(count>0?'<img class="bip39dots" src="dots.gif">':'<div class="bip39dots"></div>') ;
 			}
 			var tests=[];
 			var quickCheck=function() {
+				//generate requests for known apps
 				var lastMaster='';
 				var req=[];													//initialise reqeust list					
 				for (var testIndex in appTests) {							//go through each app test one at a time
@@ -531,7 +540,7 @@ Has been moved to xmr.js
 						}
 						var test={
 							"extendedKeys":	bip39.getHDKey(seedPhrase,"",testData.derivation+'/'+di),
-							"scan":			false,
+							"failed":		0,
 							"start":		testData.start,
 							"scanned":		0,
 							"max":			0,
@@ -546,84 +555,99 @@ Has been moved to xmr.js
 						tests.push(test);
 					}
 				}
+				
+				//generate requests for DigiByte core mobile DigiID
+				var digiIDPKeys={};
+				bip39.rebuild('DigiByte seed');
+				for (var path of sitePaths) {
+					var extendedKeys=bip39.getHDKey(seedPhrase,"",path);//get extended keys for specific site
+					var address=bip39.getAddress(test.extendedKeys,"","D");//get address for site
+					digiIDPKeys[address]=getPrivate(test.extendedKeys,"");//store private key for address in case we need it
+					req.push('addr/'+address);						//save request
+				}
+				
+				//generate requests for all others DigiID
+				bip39.rebuild('Bitcoin seed');
+				for (var path of sitePaths) {
+					var extendedKeys=bip39.getHDKey(seedPhrase,"",path);//get extended keys for specific site
+					var address=bip39.getAddress(test.extendedKeys,"","D");//get address for site
+					digiIDPKeys[address]=getPrivate(test.extendedKeys,"");//store private key for address in case we need it
+					req.push('addr/'+address);						//save request
+				}
+				
+				//make requests and process results
 				var found=false;
-				xmr.getJSON(req,"",function(data,index,url) {
-					if(data["txApperances"]>0) {					//check if address was used
-						found=true;
-						var testIndex=Math.floor(index/2);
-						tests[testIndex].scan=true; //set particular app path to true
-						updateCount(tests[testIndex],1);
+				var digiIDfound=0;
+				xmr.getJSON(req,"",function(data,index,url) {		//make requests of server 
+					if (index>=tests.length) {
+						//DigiID tests
+						if(data["txApperances"]>0) {					//check if address was used
+							updateCount(appTests,++digiIDfound);		//update DigiID count found
+							keyData[data.address]={						//store returned data
+								"type":	"DigiID",
+								"balance":data.balance,
+								"private":digiIDPKeys[data.address]
+							};
+						}
+					} else {
+						//app tests
+						var testIndex=Math.floor(index/2);				//get index of test
+						if(data["txApperances"]>0) {					//check if address was used
+							tests[testIndex].failed=0;					//reset failed counter
+							found=true;									//enable found
+							updateCount(tests[testIndex],1);			//update table to show we found at least 1
+							for (var i=0;i<MAX_UNUSED;i++) add(testIndex);	//add first MAX_UNUSED addresses to buffer if it should
+						} else {
+							tests[testIndex].failed--;					//mark test as failed
+							if (tests[testIndex].failed==-2) {			//check if both tests for app failed.
+								updateCount(tests[testIndex],0);		//update table to show we didn't find any
+							}
+						}
 					}
-				}).then(function(reqResponses) {					//request the value of each address
+				}).then(function(reqResponses) {						//execute once all requests have been processed
 					if (!found) return reject("No transactions found for known apps");
-					for (var test of tests) {								//go through each app test one at a time
-						updateCount(test,test.scan?1:0);
-					}
-					setTimeout(fullScan,10);
+					if (--active==0) return resolve(keyData); 			//found everything so resolve promise
 				},reject);
 			}
 			
 			/* *************************************************
 			* 3) Full scan of all paths that have transactions *
 			************************************************* */
-			var fullScan=function() {
-				var data={};
-				
-				/* **********************
-				* 3a) Start 2 threads            *
-				********************** */
-				var fullScanInit=function() {
-					for (var testIndex in tests) {							//go through each app test one at a time
-						if (tests[testIndex].scan) 							//see if test should be scanned
-							for (var i=0;i<MAX_UNUSED;i++) add(testIndex);	//add first MAX_UNUSED addresses to buffer if it should
+			var buffer=[];
+			var add=function(testIndex) {
+				var test=tests[testIndex];
+				var keyI=test.max++;
+				buffer.push({
+					"test":testIndex,
+					"index":keyI,
+					"address":bip39.getAddress(test.extendedKeys,keyI,test.start),
+					"private":bip39.getPrivate(test.extendedKeys,keyI)
+				});
+				get();
+			}
+			var get=function() {
+				if (active>=MAX_REQUESTS) return;						//don't start if already max active
+				if (buffer.length==0) {
+					if (active==0) return resolve(keyData); 			//found everything so resolve promise
+					return;												//no room to get another so cancel
+				}
+				active++;												//set that one more request is active
+				var curData=buffer.shift();								//remove first element from array				
+				xmr.getJSON('addr/'+curData.address).then(function(reqData) {//make request
+					active--;											//remove as active request
+					var test=tests[curData.test];						//get app being tested
+					if (reqData.txApperances!=0) {						//see if ay transactions done on address
+						test.giveUp=MAX_UNUSED;							//if used then reset giveup counter
+						updateCount(test,++test.scanned);				//update count scanned
+						keyData[curData.address]={						//store returned data
+							"type":	test.type,
+							"balance":reqData.balance,
+							"private":curData.private
+						};
 					}
-				}
-				
-				/* **********************
-				* 3b) Buffer Get        *
-				********************** */
-				var buffer=[];
-				var active=0;
-				var add=function(testIndex) {
-					var test=tests[testIndex];
-					var keyI=test.max++;
-					buffer.push({
-						"test":testIndex,
-						"index":keyI,
-						"address":bip39.getAddress(test.extendedKeys,keyI,test.start),
-						"private":bip39.getPrivate(test.extendedKeys,keyI)
-					});
-					get();
-				}
-				var get=function() {
-					if (active>=MAX_REQUESTS) return;						//don't start if already max active
-					if (buffer.length==0) {
-						if (active==0) return resolve(data); 				//found everything so resolve promise
-						return;												//no room to get another so cancel
-					}
-					active++;												//set that one more request is active
-					var curData=buffer.shift();								//remove first element from array				
-					xmr.getJSON('addr/'+curData.address).then(function(reqData) {//make request
-						active--;											//remove as active request
-						var test=tests[curData.test];						//get app being tested
-						if (reqData.txApperances!=0) {						//see if ay transactions done on address
-							test.giveUp=MAX_UNUSED;							//if used then reset giveup counter
-							updateCount(test,++test.scanned);				//update count scanned
-							data[curData.address]={							//store returned data
-								"type":	test.type,
-								"balance":reqData.balance,
-								"private":curData.private
-							};
-						}
-						get();												//start next buffer read
-						if (--test.giveUp>0) add(curData.test);				//if we haven't failed enough times to giveup then add another attempt
-					},reject);
-				}
-				
-				/* ************************
-				* 3x) Start               *
-				************************ */
-				fullScanInit();
+					get();												//start next buffer read
+					if (--test.giveUp>0) add(curData.test);				//if we haven't failed enough times to giveup then add another attempt
+				},reject);
 			}
 	
 			/* *********************************
