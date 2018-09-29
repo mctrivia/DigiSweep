@@ -458,49 +458,6 @@ Has been moved to xmr.js
 			
 				
 			/* ************************
-			* App Configuration       *
-			************************ */
-			var appTests=[
-				{
-					"name":"Core Mobile",
-					"master":"DigiByte seed",
-					"derivation":"m/0'",
-					"start":"D"
-				},
-				{
-					"name":"DigiByte Go",
-					"master":"Bitcoin seed",
-					"derivation":"m/44'/0'/0'",
-					"start":"D"
-				},
-				{
-					"name":"BIP44 Wallets",
-					"master":"Bitcoin seed",
-					"derivation":"m/44'/20'/0'",
-					"start":"D"
-				},
-				/*
-				{
-					"name":"BIP84 Wallets",
-					"master":"Bitcoin seed",
-					"derivation":"m/84'/20'/0'",
-					"start":"dgb"
-				},
-				{
-					"name":"BIP49 Wallets",
-					"master":"Bitcoin seed",
-					"derivation":"m/49'/20'/0'",
-					"start":"S"
-				}
-				*/
-			];
-			var sitePaths=[
-				"m/13'/2109410886'/21100317'/1093522950'/1777795832'",	//digibyteprojects.com
-				"m/13'/19...."	//orlib.org
-			];
-			
-			
-			/* ************************
 			* 1) Show BIP39 Window    *
 			************************ */
 			var showBIP39=function() {
@@ -561,8 +518,8 @@ Has been moved to xmr.js
 				bip39.rebuild('DigiByte seed');
 				for (var path of sitePaths) {
 					var extendedKeys=bip39.getHDKey(seedPhrase,"",path);//get extended keys for specific site
-					var address=bip39.getAddress(test.extendedKeys,"","D");//get address for site
-					digiIDPKeys[address]=getPrivate(test.extendedKeys,"");//store private key for address in case we need it
+					var address=bip39.getAddress(extendedKeys,"","D");//get address for site
+					digiIDPKeys[address]=bip39.getPrivate(extendedKeys,"");//store private key for address in case we need it
 					req.push('addr/'+address);						//save request
 				}
 				
@@ -570,23 +527,27 @@ Has been moved to xmr.js
 				bip39.rebuild('Bitcoin seed');
 				for (var path of sitePaths) {
 					var extendedKeys=bip39.getHDKey(seedPhrase,"",path);//get extended keys for specific site
-					var address=bip39.getAddress(test.extendedKeys,"","D");//get address for site
-					digiIDPKeys[address]=getPrivate(test.extendedKeys,"");//store private key for address in case we need it
+					var address=bip39.getAddress(extendedKeys,"","D");//get address for site
+					digiIDPKeys[address]=bip39.getPrivate(extendedKeys,"");//store private key for address in case we need it
 					req.push('addr/'+address);						//save request
 				}
 				
 				//make requests and process results
 				var found=false;
 				var digiIDfound=0;
-				xmr.getJSON(req,"",function(data,index,url) {		//make requests of server 
-					if (index>=tests.length) {
+				var domDigiIDpath=document.getElementById("pathDigiID");
+				xmr.getJSON(req,"",function(data,index,url) {		//make requests of server
+					console.log(index,tests.length);
+					if (index/2>=tests.length) {
 						//DigiID tests
 						if(data["txApperances"]>0) {					//check if address was used
-							updateCount(appTests,++digiIDfound);		//update DigiID count found
-							keyData[data.address]={						//store returned data
+							updateCount({"dom":domDigiIDpath},++digiIDfound);		//update DigiID count found
+							found=true;									//enable found
+							console.log(data);
+							keyData[data.addrStr]={						//store returned data
 								"type":	"DigiID",
 								"balance":data.balance,
-								"private":digiIDPKeys[data.address]
+								"private":digiIDPKeys[data.addrStr]
 							};
 						}
 					} else {
