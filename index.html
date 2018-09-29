@@ -20,7 +20,7 @@
 <div id="pageBalances" class="page">
 	<div id="balanceTable"></div>
 	<div id="balanceTotals">Total DGB Found: <span id="balanceTotal"></span> DGB</div>
-	<input id="export" type="button" value="Export Keys"><br>
+	<input id="export" type="button" value="Export Keys(not recommended) - Safer to click Next below"><br>
 	<h3>Please verify this is expected value</h3>
 	<br><input type="button" page="pageKeys" class="back" value="Add more wallets"><input type="button" page="pageRecipients" class="next" value="Next">
 </div>
@@ -33,7 +33,10 @@
 </div>
 <div id="pageSent" class="page">
 	<h1>Thanks for using DigiSweep</h1><br>
-	txid: <span id="sentTXID"></span>
+	txid: <span id="sentTXID"></span><br>&nbsp;<br>
+	Donation Address:<br>
+	<img class="DigiQR" uri="DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq"><br>
+	DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq
 </div>
 
 
@@ -54,12 +57,6 @@
 <div id="pathsTable"></div>
 </div>
 
-<div id="window_bip39" class="window">
-<h1>Processing BIP39 Seed:</h1>
-Trying <span id="bip39_app"></span><br>
-<span id="bip39_block0"></span><br>
-<span id="bip39_block1"></span><br>
-</div>
 <div id="window_bal" class="window">
 <h1>Getting Balance:</h1>
 Scanning balance of <span id="keyCount"></span> private keys
@@ -104,6 +101,7 @@ only signatures proving you know them.
 <input type="button" class="close" value="OK">
 </div>
 
+<script src="config.js"></script>
 <script src="bip38d.js"></script>
 <script src="digibyte.min.js"></script>
 <script src="bip39.js"></script>
@@ -111,3 +109,4 @@ only signatures proving you know them.
 <script src="sjcl.js"></script>
 <script src="xmr.js"></script>
 <script src="main.js"></script>
+<script src="digiQR.min.js"></script>
