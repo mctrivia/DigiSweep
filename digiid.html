@@ -1,0 +1,54 @@
+<style>
+input {
+	width:	100%;
+}
+</style>
+<h1>DigiID Path Finder</h1>
+
+
+Scan the QR code provided by the DigiID web site with a bar code reading app and type value it says below:<br>
+<input type="text" id="url" width="100"><br>
+<br>
+Sites Path:<br>
+<input type="text" id="path" width="100" disabled">
+
+
+
+<script src="bip39.js"></script>
+<script>
+
+var domURL=document.getElementById('url');
+domURL.addEventListener('keyup',function() {
+	var text=domURL.value.trim();
+	var a=text.indexOf(':');
+	var b=text.indexOf('?');
+	if ((a>=0)&&(b>=0)) {
+		text=String.fromCharCode(0)+String.fromCharCode(0)+String.fromCharCode(0)+String.fromCharCode(0)+'https'+text.substr(a,b-a);
+		//text=text.substr(0,b);
+		console.log(text);
+		
+		var hash=bitcoinjs.bitcoin.crypto.sha256(text);
+		var path="m/13'";
+		for (var i=0;i<16;i+=4) {
+			path+="/"+((hash[i+3]&0x7f)<<24|hash[i+2]<<16|hash[i+1]<<8|hash[i])+"'";
+		}
+		document.getElementById('path').value=path;
+		
+		
+		
+		/*
+		
+		var createHash = require('create-hash');
+		
+		function sha256 (buffer) {
+		  return createHash('sha256').update(buffer).digest()
+		}
+		console.log(sha256(text));
+		
+		*/
+		
+		
+		
+	}
+});
+</script>
