@@ -31,7 +31,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	const MAX_REQUESTS=4;													//max number of concurent requests to explorer server
 	const MAX_UNUSED=20;													//bip39 giveup point recomend 20
 	const TX_FEE_KB=0.0002;													//fee amount per kb
-	const SEND_MIN=0.0025;													//minimum amount that can be sent to an address
+	const SEND_MIN=0.0007;													//minimum amount that can be sent to an address
 	
 	const MAX_UTXOS=60;														//max number of utxo that can fit in a transaction
 	const SIZE_UTXO_OVERHEAD=150;		//148+error margin
@@ -389,7 +389,6 @@ Has been moved to xmr.js
 			var add=function(testIndex) {
 				var test=tests[testIndex];
 				var keyI=test.max++;
-				console.log(bip39.getAddress(test.extendedKeys,keyI,test.start));
 				buffer.push({
 					"test":testIndex,
 					"index":keyI,
@@ -537,13 +536,11 @@ Has been moved to xmr.js
 				var digiIDfound=0;
 				var domDigiIDpath=document.getElementById("pathDigiID");
 				xmr.getJSON(req,"",function(data,index,url) {		//make requests of server
-					console.log(index,tests.length);
 					if (index/2>=tests.length) {
 						//DigiID tests
 						if(data["txApperances"]>0) {					//check if address was used
 							updateCount({"dom":domDigiIDpath},++digiIDfound);		//update DigiID count found
 							found=true;									//enable found
-							console.log(data);
 							keyData[data.addrStr]={						//store returned data
 								"type":	"DigiID",
 								"balance":data.balance,
