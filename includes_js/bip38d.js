@@ -1,8 +1,3 @@
-//[pass,pkey]
-
-
-
-
 /* _____                       _       _     _     ___   ___  __  ___  
   / ____|                     (_)     | |   | |   |__ \ / _ \/_ |/ _ \ 
  | |     ___  _ __  _   _ _ __ _  __ _| |__ | |_     ) | | | || | (_) |
@@ -32,24 +27,22 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 "use strict";
-(function(window,undefined){
-	window["bip38decode"]=function(privateKey,pass,func) {
-		func=func||function(){};
-		return new Promise(function(resolve,reject) {					//return promise since execution is asyncronous
+(function(window,undefined){									//anonymous function to make minimizing easier
+	window["bip38decode"]=function(privateKey,pass,func) {		//declare external function
+		func=func||function(){};								//set default call back function to nothing
+		return new Promise(function(resolve,reject) {			//return promise since execution is asyncronous
 			var worker = new Worker('bip38d_worker.js');		//create worker to download and decode json
-			worker.addEventListener('message',function(e) {	//wait for workers response
-				var data=e.data;
-				if (typeof data=="number") {
-					func(data);
-				} else if (data===false) {
-					reject("Bad Password");
-				} else {
-					resolve(data);
+			worker.addEventListener('message',function(e) {		//wait for workers response
+				var data=e.data;								//get returned data
+				if (typeof data=="number") {					//if data is number it is progress report
+					func(data);									//execute progress function with value
+				} else if (data===false) {						//if data is false password was invalide
+					reject("Bad Password");						//reject promise with error message
+				} else {										//if anything else then processing is complete
+					resolve(data);								//resolve promise
 				}
 			});
-			worker.postMessage([privateKey,pass]);			//start worker working
-		
+			worker.postMessage([privateKey,pass]);				//start worker working.  Done as worker so it doesn't stall page
 		});
 	}
-
 })(window);

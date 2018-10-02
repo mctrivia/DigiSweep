@@ -368,7 +368,7 @@ Has been moved to xmr.js
 			var checkPath=function() {
 				for (var di=0;di<2;di++) {
 					tests.push({
-						"extendedKeys":	bip39.getHDKeyFromXPrv(xprv,"m/44'/0'/0'/"+di),
+						"hdKey":	bip39.getHDKeyFromXPrv(xprv,"m/44'/0'/0'/"+di),
 						"start":		"D",
 						"max":			0,
 						"giveUp":		MAX_UNUSED,
@@ -389,11 +389,12 @@ Has been moved to xmr.js
 			var add=function(testIndex) {
 				var test=tests[testIndex];
 				var keyI=test.max++;
+				var keyPair=test.hdKey.derive(keyI).keyPair;
 				buffer.push({
 					"test":testIndex,
 					"index":keyI,
-					"address":bip39.getAddress(test.extendedKeys,keyI,test.start),
-					"private":bip39.getPrivate(test.extendedKeys,keyI)
+					"address":keyPair.getAddress(test.start),
+					"private":keyPair.toWIF(keyI)
 				});
 				get();
 			}
@@ -483,19 +484,21 @@ Has been moved to xmr.js
 				test.dom.innerHTML='Found: '+count+(count>0?'<img class="bip39dots" src="dots.gif">':'<div class="bip39dots"></div>') ;
 			}
 			var tests=[];
+			var hdKey;
 			var quickCheck=function() {
 				//generate requests for known apps
 				var lastMaster='';
-				var req=[];													//initialise reqeust list					
-				for (var testIndex in appTests) {							//go through each app test one at a time
+				var req=[];												//initialise reqeust list					
+				for (var testIndex in appTests) {						//go through each app test one at a time
 					var testData=appTests[testIndex];
-					for (var di=0;di<2;di++) {									//check incoming/change
-						if (testData.master!=lastMaster) {					//speed up processing by only reseting master when needed
+					for (var di=0;di<2;di++) {							//check incoming/change
+						if (testData.master!=lastMaster) {				//speed up processing by only reseting master when needed
 							bip39.rebuild(testData.master);
 							lastMaster=testData.master;
+							hdKey=bip39.getHDKey(seedPhrase);
 						}
 						var test={
-							"extendedKeys":	bip39.getHDKey(seedPhrase,"",testData.derivation+'/'+di),
+							"hdKey":	hdKey.derivePath(testData.derivation+'/'+di),
 							"failed":		0,
 							"start":		testData.start,
 							"scanned":		0,
@@ -505,8 +508,8 @@ Has been moved to xmr.js
 							"dom":			document.getElementById('path'+testIndex+di)
 						};
 						for (var keyI=0;keyI<2;keyI++) {
-							var address=bip39.getAddress(test.extendedKeys,keyI,test.start);//get address for test
-							req.push('addr/'+address);						//get address for test and save request
+							var address=test.hdKey.derive(keyI).keyPair.getAddress(test.start);//get address for test
+							req.push('addr/'+address);					//get address for test and save request
 						}
 						tests.push(test);
 					}
@@ -516,26 +519,26 @@ Has been moved to xmr.js
 				var digiIDPKeys={};
 				bip39.rebuild('DigiByte seed');
 				for (var path of sitePaths) {
-					var extendedKeys=bip39.getHDKey(seedPhrase,"",path);//get extended keys for specific site
-					var address=bip39.getAddress(extendedKeys,"","D");//get address for site
-					digiIDPKeys[address]=bip39.getPrivate(extendedKeys,"");//store private key for address in case we need it
-					req.push('addr/'+address);						//save request
+					var keyPair=bip39.getHDKey(seedPhrase).derivePath(path).keyPair;	//get key pair for specific site
+					var address=keyPair.getAddress();					//get address for site
+					digiIDPKeys[address]=keyPair.toWIF();				//store private key for address in case we need it
+					req.push('addr/'+address);							//save request
 				}
 				
 				//generate requests for all others DigiID
 				bip39.rebuild('Bitcoin seed');
 				for (var path of sitePaths) {
-					var extendedKeys=bip39.getHDKey(seedPhrase,"",path);//get extended keys for specific site
-					var address=bip39.getAddress(extendedKeys,"","D");//get address for site
-					digiIDPKeys[address]=bip39.getPrivate(extendedKeys,"");//store private key for address in case we need it
-					req.push('addr/'+address);						//save request
+					var keyPair=bip39.getHDKey(seedPhrase).derivePath(path).keyPair;	//get key pair for specific site
+					var address=keyPair.getAddress();					//get address for site
+					digiIDPKeys[address]=keyPair.toWIF();				//store private key for address in case we need it
+					req.push('addr/'+address);							//save request
 				}
 				
 				//make requests and process results
 				var found=false;
 				var digiIDfound=0;
 				var domDigiIDpath=document.getElementById("pathDigiID");
-				xmr.getJSON(req,"",function(data,index,url) {		//make requests of server
+				xmr.getJSON(req,"",function(data,index,url) {			//make requests of server
 					if (index/2>=tests.length) {
 						//DigiID tests
 						if(data["txApperances"]>0) {					//check if address was used
@@ -575,11 +578,12 @@ Has been moved to xmr.js
 			var add=function(testIndex) {
 				var test=tests[testIndex];
 				var keyI=test.max++;
+				var keyPair=test.hdKey.derive(keyI).keyPair;
 				buffer.push({
 					"test":testIndex,
 					"index":keyI,
-					"address":bip39.getAddress(test.extendedKeys,keyI,test.start),
-					"private":bip39.getPrivate(test.extendedKeys,keyI)
+					"address":keyPair.getAddress(test.start),
+					"private":keyPair.toWIF()
 				});
 				get();
 			}
