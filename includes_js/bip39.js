@@ -9277,24 +9277,31 @@ ECPair.makeRandom = function (options) {
 }
 
 ECPair.prototype.getAddress = function (type) {
+console.log('********');
+console.log(type);
 	var address = baddress.toBase58Check(bcrypto.hash160(this.getPublicKeyBuffer()), this.getNetwork().pubKeyHash);
-			
+console.log(this);
 	// Segwit addresses are different
 	if (type=="dgb") {	//84
-		var keyhash = bitcoinjs.bitcoin.crypto.hash160(this.getPublicKeyBuffer());
+		var keyhash = bitcoinjs.bitcoin.crypto.hash160(this.getPublicKeyBuffer());				//a
+console.log(keyhash);
 		var scriptpubkey = bitcoinjs.bitcoin.script.witnessPubKeyHash.output.encode(keyhash);
-		address = bitcoinjs.bitcoin.address.fromOutputScript(
-		scriptpubkey, 
-		this.network);
+console.log(scriptpubkey);
+		address = bitcoinjs.bitcoin.address.fromOutputScript(scriptpubkey, this.network);		//b
 	}				//49
 	if (type=="S") {
-		var keyhash = bitcoinjs.bitcoin.crypto.hash160(this.getPublicKeyBuffer());
+		var keyhash = bitcoinjs.bitcoin.crypto.hash160(this.getPublicKeyBuffer());				//a
+console.log(keyhash);
 		var scriptsig = bitcoinjs.bitcoin.script.witnessPubKeyHash.output.encode(keyhash);
+console.log(scriptsig);
 		var addressbytes = bitcoinjs.bitcoin.crypto.hash160(scriptsig);
+console.log(addressbytes);
 		var scriptpubkey = bitcoinjs.bitcoin.script.scriptHash.output.encode(addressbytes);
-		address = bitcoinjs.bitcoin.address.fromOutputScript(scriptpubkey, this.network);
+console.log(scriptpubkey);
+		address = bitcoinjs.bitcoin.address.fromOutputScript(scriptpubkey, this.network);		//b
 	}
-	
+console.log(address);
+console.log('********');
 	return address;
 }
 
@@ -15235,8 +15242,7 @@ module.exports = {
 });
 };
 rebuild();
-window['bip39']={rebuild:rebuild};bitcoinjs.bitcoin.networks.bitcoin={messagePrefix:"\u0018DigiByte Signed Message:\n",bech32:"dgb",bip32:{"public":76067358,"private":76066276},pubKeyHash:30,scriptHash:99,wif:128};bitcoinjs.bitcoin.networks.bitcoin.p2wpkh={baseNetwork:"digibyte",messagePrefix:"\u0018DigiByte Signed Message:\n",bech32:"dgb",bip32:{"public":76067358,"private":76066276},pubKeyHash:30,scriptHash:99,wif:128};
-bitcoinjs.bitcoin.networks.bitcoin.p2wpkhInP2sh={baseNetwork:"digibyte",messagePrefix:"\u0018DigiByte Signed Message:\n",bech32:"dgb",bip32:{"public":76067358,"private":76066276},pubKeyHash:30,scriptHash:99,wif:128};(function(){var a=function(b){for(var c=Array.prototype.slice.call(arguments,1),a=0;a<c.length;++a){var r=c[a],p;for(p in r)r.hasOwnProperty(p)&&(b[p]=r[p])}return b},b={get:function(b,a){if(b===a)return 0;if(0===b.length)return a.length;if(0===a.length)return b.length;var c=Array(a.length+1),e,p,d,l,h;for(d=0;d<c.length;++d)c[d]=d;for(d=0;d<b.length;++d){p=d+1;for(l=0;l<a.length;++l)e=p,p=c[l]+(b.charAt(d)===a.charAt(l)?0:1),h=e+1,p>h&&(p=h),h=c[l+1]+1,p>h&&(p=h),c[l]=e;c[l]=p}return p},getAsync:function(b,
+window['bip39']={rebuild:rebuild};bitcoinjs.bitcoin.networks.bitcoin={messagePrefix:"\u0018DigiByte Signed Message:\n",bech32:"dgb",bip32:{"public":76067358,"private":76066276},pubKeyHash:30,scriptHash:63,wif:128};(function(){var a=function(b){for(var c=Array.prototype.slice.call(arguments,1),a=0;a<c.length;++a){var r=c[a],p;for(p in r)r.hasOwnProperty(p)&&(b[p]=r[p])}return b},b={get:function(b,a){if(b===a)return 0;if(0===b.length)return a.length;if(0===a.length)return b.length;var c=Array(a.length+1),e,p,d,l,h;for(d=0;d<c.length;++d)c[d]=d;for(d=0;d<b.length;++d){p=d+1;for(l=0;l<a.length;++l)e=p,p=c[l]+(b.charAt(d)===a.charAt(l)?0:1),h=e+1,p>h&&(p=h),h=c[l+1]+1,p>h&&(p=h),c[l]=e;c[l]=p}return p},getAsync:function(b,
 e,f,r){r=a({},{progress:null},r);if(b===e)return f(null,0);if(0===b.length)return f(null,e.length);if(0===e.length)return f(null,b.length);var c=Array(e.length+1),d,l,h,k,q,g,m;for(h=0;h<c.length;++h)c[h]=h;l=1;h=0;k=-1;var n=function(){for(m=g=(new Date).valueOf();1E3>m-g;){if(e.length<=++k){c[k]=l;if(b.length<=++h)return f(null,l);l=h+1;k=0}d=l;l=c[k]+(b.charAt(h)===e.charAt(k)?0:1);q=d+1;l>q&&(l=q);q=c[k+1]+1;l>q&&(l=q);c[k]=d;m=(new Date).valueOf()}if(null!==r.progress)try{r.progress.call(null,
 100*h/b.length)}catch(M){return f("Progress callback: "+M.toString())}var a=n;"function"===typeof setImmediate?setImmediate(a):setTimeout(a,0)};n()}};"undefined"!==typeof define&&null!==define&&define.amd?define(function(){return b}):"undefined"!==typeof module&&null!==module&&"undefined"!==typeof exports&&module.exports===exports?module.exports=b:"undefined"!==typeof self&&"function"===typeof self.postMessage&&"function"===typeof self.importScripts?self.Levenshtein=b:"undefined"!==typeof window&&
 null!==window&&(window.Levenshtein=b)})();var sjcl={cipher:{},hash:{},keyexchange:{},mode:{},misc:{},codec:{},exception:{corrupt:function(a){this.toString=function(){return"CORRUPT: "+this.message};this.message=a},invalid:function(a){this.toString=function(){return"INVALID: "+this.message};this.message=a},bug:function(a){this.toString=function(){return"BUG: "+this.message};this.message=a},notReady:function(a){this.toString=function(){return"NOT READY: "+this.message};this.message=a}}};
