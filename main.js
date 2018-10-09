@@ -227,17 +227,6 @@ Has been moved to xmr.js
 						console.log(decoded);
 						
 						return resolve(decoded["xPrivKey"]);
-						/*
-						if (decoded["mnemonic"]!=undefined) {		//may need to use xPrivKey
-							return resolve(decoded["mnemonic"]);	
-						}
-						*/
-						
-						
-						
-						
-						
-						
 						
 					} catch(e) {
 					}

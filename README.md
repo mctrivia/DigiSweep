@@ -13,7 +13,6 @@ Live runable version available at:  https://mctrivia.github.io/DigiSweep/index.h
 ### Able to send funds to 1 or more DigiByte Legacy Addresses(addresses starting with D)
 
 
-
 # Contribution:
 ## Pull request welcomed(please comment thoroughly)
 
