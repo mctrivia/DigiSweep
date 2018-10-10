@@ -2,12 +2,12 @@
 ECHO Building digibyte.min.js
 
 ::Check needed files exist then combine to 1 file
-IF NOT EXIST %~dp1~wrapperStart.js GOTO missingfile
-IF NOT EXIST %~dp1~wrapperEnd.js GOTO missingfile
+IF NOT EXIST %~dp0..\~wrapperStart.js GOTO missingfile
+IF NOT EXIST %~dp0..\~wrapperEnd.js GOTO missingfile
 IF NOT EXIST %~dp0digibyte.min.js GOTO missingfile
-IF EXIST %~dp1digibyte.min.js DEL %~dp1digibyte.min.js
-copy /b %~dp1~wrapperStart.js + %~dp0digibyte.min.js + %~dp1~wrapperEnd.js %~dp1digibyte.min.js /V 1>NUL
-IF NOT EXIST %~dp1digibyte.min.js GOTO failed
+IF EXIST %~dp0..\digibyte.min.js DEL %~dp0..\digibyte.min.js
+COPY /b %~dp0..\~wrapperStart.js + %~dp0digibyte.min.js + %~dp0..\~wrapperEnd.js %~dp0..\digibyte.min.js /V 1>NUL
+IF NOT EXIST %~dp0..\digibyte.min.js GOTO failed
 
 ::Pause if not batch running
 IF "%1"=="Y" GOTO end

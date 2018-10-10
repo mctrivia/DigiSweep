@@ -1,4 +1,16 @@
-(function(document,undefined) {
+//---------------------------------------------------------------------
+//
+// DigiQR Code
+//
+// Copyright (c) 2018 Matthew Cornelisse
+//
+// URL: http://github.com/mctrivia/DigiQR/
+//
+// Licensed under the MIT license:
+//  http://www.opensource.org/licenses/mit-license.php
+//
+//---------------------------------------------------------------------
+
 	//minifier helpers
 	var bezierCurveTo="bezierCurveTo";
 	var lineTo="lineTo";
@@ -510,6 +522,3 @@
 		},
 		"auto": autoLoad
 	};
-	
-
-})(document);

@@ -1,4 +1,4 @@
-# DigiQR
+#DigiQR
 
 Uses a modified version of https://github.com/kazuhikoarase/qrcode-generator
 
@@ -27,6 +27,6 @@ All return an encoded image.  can be directly set as img tags src
 		});
 		
 		
-Can also include img tags in following format.  All but uri are optional:
+	Can also include img tags in following format.  All but uri are optional:
 			
-	<img class="DigiQR" uri="digibyte:dgb1qqlzvqjew735uvpaelqs663ckxs7lnknrgulc82" size="150" logo="2" r="1">
+		<img class="DigiQR" uri="digibyte:dgb1qqlzvqjew735uvpaelqs663ckxs7lnknrgulc82" size="150" logo="2" r="1">

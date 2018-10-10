@@ -6,7 +6,7 @@ IF NOT EXIST %~dp0..\~wrapperStart.js GOTO missingfile
 IF NOT EXIST %~dp0..\~wrapperEnd.js GOTO missingfile
 IF NOT EXIST %~dp0sjcl.min.js GOTO missingfile
 IF EXIST %~dp0..\sjcl.min.js DEL %~dp0..\sjcl.min.js
-copy /b %~dp0..\~wrapperStart.js + %~dp0sjcl.min.js + %~dp0..\~wrapperEnd.js %~dp0..\sjcl.min.js /V 1>NUL
+COPY /b %~dp0..\~wrapperStart.js + %~dp0sjcl.min.js + %~dp0..\~wrapperEnd.js %~dp0..\sjcl.min.js /V 1>NUL
 IF NOT EXIST %~dp0..\sjcl.min.js GOTO failed
 
 ::Pause if not batch running
