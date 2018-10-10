@@ -10,11 +10,11 @@ Scan the QR code provided by the DigiID web site with a bar code reading app and
 <input type="text" id="url" width="100"><br>
 <br>
 Sites Path:<br>
-<input type="text" id="path" width="100" disabled">
+<input type="text" id="path" width="100" disabled>
 
 
 
-<script src="bip39.js"></script>
+<script src="includes_js/bip39.js"></script>
 <script>
 
 var domURL=document.getElementById('url');
@@ -32,23 +32,7 @@ domURL.addEventListener('keyup',function() {
 		for (var i=0;i<16;i+=4) {
 			path+="/"+((hash[i+3]&0x7f)<<24|hash[i+2]<<16|hash[i+1]<<8|hash[i])+"'";
 		}
-		document.getElementById('path').value=path;
-		
-		
-		
-		/*
-		
-		var createHash = require('create-hash');
-		
-		function sha256 (buffer) {
-		  return createHash('sha256').update(buffer).digest()
-		}
-		console.log(sha256(text));
-		
-		*/
-		
-		
-		
+		document.getElementById('path').value=path;		
 	}
 });
 </script>

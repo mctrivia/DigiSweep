@@ -15,6 +15,12 @@ var appTests=[
 		"start":"D"
 	},
 	{
+		"name":"BIP44 Doge Wallets",
+		"master":"Bitcoin seed",
+		"derivation":"m/44'/3'/0'",
+		"start":"D"
+	},
+	{
 		"name":"BIP44 Wallets",
 		"master":"Bitcoin seed",
 		"derivation":"m/44'/20'/0'",
@@ -35,6 +41,9 @@ var appTests=[
 	}
 	*/
 ];
+
+
+
 /* ************************
 * Common DigiID Paths     *
 ************************ */

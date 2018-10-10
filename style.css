@@ -86,32 +86,6 @@
 }
 
 
-#digiIDTable{
-	display: table;
-	width:	100%;	
-}
-.digiIDRow{
-	display: table-row;	
-}
-.digiIDHead{
-	display: table-cell;
-	padding: 3px 10px;
-	border: 1px solid #999999;
-	background-color: #888888;
-}
-.digiIDCellAddress{
-	display: table-cell;
-	padding: 3px 10px;
-	border: 1px solid #999999;
-	background-color: #FFFFFF;
-}
-.digiIDCellFound{
-	display: table-cell;
-	padding: 3px 10px;
-	border: 1px solid #999999;
-}
-
-
 
 
 #shadow {
