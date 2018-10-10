@@ -10,3 +10,4 @@ Libraries Used:
 - mdp's gibberish-aes library: Used to decode old android wallet files 
 - bitwiseshiftleft's sjcl library: Used to decode Go wallet files
 - digibyte's digibyte.js library: Used to generate tx messages, and validate inputs.
+
