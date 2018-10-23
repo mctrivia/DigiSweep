@@ -1,4 +1,8 @@
-.page{display: none;}
+.page{
+	display: none;
+	margin-top: 50px;
+	margin-bottom: 50px;
+	}
 
 .bip39dots{
 	height:14px;
