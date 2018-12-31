@@ -26,4 +26,4 @@ Live runable version available at:  https://mctrivia.github.io/DigiSweep/index.h
 
 
 # Donations: 
-DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq
+D9RVKBjzRvnzUUTHxZBNZ3kfAHrmci1v76
