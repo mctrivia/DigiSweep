@@ -2,6 +2,11 @@
 	padding:			5px;
 }
 
+#logo{
+	width: 100%;
+	margin-top:	10px;
+}
+
 .pathsHead{
 	padding: 			3px 10px;
 }
