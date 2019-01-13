@@ -29,21 +29,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 "use strict";
 (function(window,document,undefined){
 	const MAX_REQUESTS=4;													//max number of concurent requests to explorer server
-	const MAX_UNUSED=20;													//bip39 giveup point recomend 20
-	const TX_FEE_KB=0.0002;													//fee amount per kb
+	const MAX_UNUSED=2;													//bip39 giveup point recomend 20
 	const SEND_MIN=0.0007;													//minimum amount that can be sent to an address
-	
-	const MAX_UTXOS=60;														//max number of utxo that can fit in a transaction
-	const SIZE_UTXO_OVERHEAD=150;		//148+error margin
-	const SIZE_TRANSACTION_OVERHEAD=12;	//10+error margin
-	const SIZE_RECIPIENT_OVERHEAD=36;	//34+error margin
-	
-	var digibyte=require('digibyte');										//load digibyte object.  should check digibyte.min.js has not been edited since last confirmation of good standing
-	digibyte.Transaction.FEE_PER_KB=TX_FEE_KB*100000000;
-	
-	
-	
-
 	
 	
 /*     _  _____  ____  _   _   _____                            _   
@@ -634,7 +621,7 @@ Has been moved to xmr.js
 				var reqs=[];
 				var data={};
 				for (var key of keys) {								//go through each private key and look up its value
-					var publicAddress=digibyte.PrivateKey.fromString(key).toAddress().toString();	//computepublic address
+					var publicAddress=DigiByte.PrivateKey.toAddress(key);	//computepublic address
 					reqs.push("addr/"+publicAddress);				//add request for data about public key
 					data[publicAddress]={
 						"private":key,								//temporarily store private key incase user wants to export to file.  Requires user request.
@@ -686,10 +673,12 @@ Has been moved to xmr.js
 				* 2) See if Seed Phrase *
 				********************** */
 				isSeedPhrase=false;											//initialise seed phrase check
-				if ((privateKeys.length%6==0)&&(privateKeys.length>11)) {	//find if 12,18,24,...
+				if ((privateKeys.length%3==0)&&(privateKeys.length>11)&&(privateKeys.length<25)) {	//find if 12,15,18,21,24
 					if (privateKeys[0].length<20) {							//check if short word or long private key
-						isSeedPhrase=true;									//is likely seed phrase
-						return resolve();										//mark as valid because don't have validity check yet
+						if (bip39.getHDKey(privateKeys.join(' '))!==false) {//check if valid seed phrase(will put any errors to console)
+							isSeedPhrase=true;								//is likely seed phrase
+							return resolve();								//mark as valid
+						}
 					}
 				}
 				isXPrv=false;
@@ -740,7 +729,7 @@ Has been moved to xmr.js
 						document.getElementById("passwordFail2").addEventListener('click',reject);
 						
 					} else {
-						if (!digibyte.PrivateKey.isValid(privateKeys[i])) 		//looks to see if key is valid
+						if (!DigiByte.PrivateKey.isValid(privateKeys[i])) 		//looks to see if key is valid
 							return reject("Invalid Private Key: "+privateKeys[i]);//if not valid then return error message(doesn't bother checking rest of keys)
 						if (i==0) {
 							resolve();
@@ -826,14 +815,12 @@ Has been moved to xmr.js
                    | |                                       __/ |     
                    |_|                                      |___/
 */
-	var utxos;
-	var utxoCount;
+	var transaction=new DigiByte.Transaction();
+	transaction.setChange('DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq');//dgb1qcqf4lmecxg5ucptzgzzzfch4wztqrlhmqjqqvg');
 					
 	$PAGE["pageRecipients"]={
 		load: function(){
 			return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
-				utxos={};
-				utxoCount=0;
 				var unspendable=0;
 				
 				/* ***********************************************
@@ -854,18 +841,15 @@ Has been moved to xmr.js
 							req[address]="addr/"+address+"/utxo";
 					}
 					xmr.getJSON(req,"",function(data,address){
-						var usable=[];
 						for (var utxo of data) {
 							if (utxo["confirmationsFromCache"]) {
-								usable.push(utxo);
+								transaction.addIn(utxo,accountData[address].private);
 							} else {
 								unspendable+=utxo["amount"];
 								accountData[address].balance-=utxo["amount"];		//reduce funds if any utxo where unspendable
 							}
 						}
 						
-						utxos[address]=usable;
-						utxoCount+=usable.length;
 					}).then(finish,reject);
 				}
 				
@@ -892,173 +876,10 @@ Has been moved to xmr.js
 	}
 	var txFee;															//initialise txFee variable
 	var recipients={};													//initialise recipients list
-	var sizeToFee=function(size) {									//function to get estimated fees
-		return TX_FEE_KB*(1+Math.floor(size/1000));						//calculates tx fess for transaction of size bytes
-	}
 	var estimateFee=function() {									//function to estimate fees
-		var tos=Object.keys(recipients).length;							//get number of recipients.  Include those with 0 value so number is at max
-		var messageCount=Math.ceil(utxoCount/MAX_UTXOS);				//get number of messages needed to send all funds
-		var size=	messageCount*SIZE_TRANSACTION_OVERHEAD + 
-					utxoCount*SIZE_UTXO_OVERHEAD + 
-					(tos+messageCount)*SIZE_RECIPIENT_OVERHEAD;
-		txFee=TX_FEE_KB*(Math.floor(size/1000)+messageCount);				//round up to nearest kilobyte and multiply by fee rate
+		txFee=transaction.getFee()/100000000;				//round up to nearest kilobyte and multiply by fee rate
 		(document.getElementById("recipientsAmount_fee")||{"innerHTML":""}).innerHTML=txFee.toFixed(8);
 		return txFee;
-	}
-	var createTX=function(skip) {									//function to create the fund transaction
-		//determen how many messages we need
-		var messageCount=Math.ceil(utxoCount/MAX_UTXOS);				//determine how many messages are needed
-		console.log("TXs needed: ",messageCount);
-		console.log("UTXO count: ",utxoCount);
-		
-		var parts=[];
-		if (messageCount==1) {
-			var curUTXOs=[];											//create temporary variable for all utxos
-			var pkeys=[];												//create array for pkeys
-			for (var address in utxos) {								//go through each address in utxo list
-				pkeys.push(accountData[address].private);				//add pkey to temporary list
-				for (var utxo of utxos[address]) {						//go through each utxo for address
-					curUTXOs.push(utxo);								//add to temporary list of all utxos
-				}
-			}
-			var tos=[];
-			for (var to in recipients) {								//go through each of the recipients set "to" to the address
-				if (recipients[to]>=SEND_MIN) {							//check if any funds going to recipient
-					tos.push([											//add recipient to transaction 
-						digibyte.Address.fromString(to),				//encode to address
-						Math.round(recipients[to]*100000000)			//convert funds to shatoshi
-					]);
-				}
-			}
-			parts=[{													//create transaction message
-				"utxos":	curUTXOs,									//add utxos
-				"pkeys":	pkeys,										//add private keys
-				"tos":		tos											//add recipients
-			}];
-		} else {
-			//error("DigiSweep doesn't yet support transactions this big.  We are working on it");
-			
-			
-			
-			//create parts
-			for (var i=0;i<messageCount;i++) {							//create empty transaction 
-				parts.push({
-					"balance":	0,
-					"size":		SIZE_TRANSACTION_OVERHEAD,
-					"utxos":	[],
-					"pkeys":	[],
-					"tos":		[]
-				});
-			}			
-			
-			//copy utxo table
-			var tempUTXOs=JSON.parse(JSON.stringify(utxos));
-			
-			
-			//add largest number of utxos into smallest part
-			var addressCount=Object.keys(tempUTXOs).length;
-			while (addressCount>0) {
-				//get longest address
-				var address;											//initialise address variable
-				var longest=0;											//length of longest utxo
-				for (var testAddress in tempUTXOs) {					//go through each address in utxos 1 at a time
-					var len=tempUTXOs[testAddress].length;				//get number of utxo for address
-					if (len>longest){									//see if longer then longest known
-						longest=len;									//record length
-						address=testAddress;							//record address
-					}
-				}
-				
-				//find part with minimum number of utxos
-				var partMinIndex=0;										//variable to store index of part with shortest utxo list
-				var partMin=Infinity;									//variable to store number of utxos in it
-				for (var partIndex in parts) {							//go through each part
-					var len=parts[partIndex].utxos.length;				//get number of utxos in part
-					if (len<partMin) {									//find if less then current shortest
-						partMin=len;									//store index
-						partMinIndex=partIndex;							//store length
-					}
-				}
-				
-				//insert into found part
-				while ((parts[partMinIndex].utxos.length<MAX_UTXOS)&&(tempUTXOs[address].length>0))  {//while there is sapce and something to add
-					var utxo=tempUTXOs[address].pop();					//remove utxo item from current address
-					parts[partMinIndex].utxos.push(utxo);				//add utxo to list of utxos in part
-					parts[partMinIndex].size+=SIZE_UTXO_OVERHEAD;		//add to transaction size
-					parts[partMinIndex].balance+=utxo.amount;			//add balance to part
-				}
-				if (tempUTXOs[address].length==0) addressCount--;		//mark as done if done
-				parts[partMinIndex].pkeys.push(accountData[address].private);//add private key to part
-			}
-			
-			//compute number of recipients with meaningful balance
-			var toAddresses=[];
-			var toBalances=[];
-			for (var to in recipients) {								//go through each of the recipients set "to" to the address
-				if (recipients[to]>=SEND_MIN) {									//make list of recipients(tos) with a balance owing
-					toAddresses.push(to);								//store address
-					toBalances.push(recipients[to]);					//store balance
-				}
-			}
-			
-			//compute donate so smart donation on edge cases can be done
-			var donateRemainding=updateRemainder();
-						
-			//add tos to parts
-			var toIndex=toAddresses.length-1;							//start at last recipient in list
-			for (var part of parts) {									//go through each transaction(part)
-				var leftOver=0;											//define and set 0 value;
-				while (
-					(toIndex>=0)										//while not done
-					&& (part.balance>sizeToFee(part.size)+SEND_MIN)		//and while still funds left that can be sent
-					&& (leftOver==0)									//and there was no left overs as this only happens when we split a to between messages
-				) {	
-					var to=toAddresses[toIndex];						//current address to add
-					var usedFunds=Math.min(								//pick least option
-						toBalances[toIndex],							//all funds that need to go to address still
-						part.balance-sizeToFee(part.size)				//funds left in address minus tx fee
-					);
-					var leftOver=toBalances[toIndex]-usedFunds;
-					if ((leftOver>0) && (leftOver<SEND_MIN)) {			//see if split result in dust in second half
-						if (donateRemainding>=SEND_MIN) {				//see if we can use donate funds to make split work
-							usedFunds-=SEND_MIN;
-							donateRemainding-=SEND_MIN;
-						} else {
-							throw new Error("Donation not high enough to fix transactions.  Try removing recipients or increasing donation.");
-						}
-					}
-					part.balance-=usedFunds;							//update how much funds are left in transaction
-					toBalances[toIndex]-=usedFunds;						//update amount we still need to send to this recipient
-					part.size+=SIZE_RECIPIENT_OVERHEAD;					//add to transaction size
-					if (leftOver==0) toIndex--;							//update index if we used up funds
-					part.tos.push([										//add to recipients list in transaction
-						digibyte.Address.fromString(to),				//add address encoded correctly for transaction
-						Math.round(usedFunds*100000000)					//convert funds to shatoshi
-					]);					
-				}			
-			}
-		}
-		
-		console.log(parts);
-		var message=[];													//initialise message variable		
-		for (var part of parts) {
-			var transaction=new digibyte.Transaction()					//initialize transaction
-				.from(part.utxos);										//include all inputs
-			for (var to of part.tos) {									//go through each of the recipients set "to" to the address
-				transaction.to(to[0],to[1]);							//add there due amount
-			}
-			transaction.change(digibyte.Address.fromString('D9RVKBjzRvnzUUTHxZBNZ3kfAHrmci1v76'));	//set change address as donate address 
-			transaction.sign(part.pkeys);								//sign transaction with private keys
-			try {														//start a error detection block because serialize throws errors some times
-				message.push(transaction.serialize());					//encode the message
-			} catch(err) {												//if there was an error then catch it
-				console.log(err);										//make debug log of error
-				throw new Error("Failed to generate transaction.");		//set that message failed
-				return false;											//just in case
-			}
-		}	
-		console.log(message);
-		return message;													//return the serialized message or false if failed
 	}
 	var updateRemainder=function(skip) {							//function to get remaining unspent amount and update remainder line on dom
 		var remainder=0;												//initialise remainder 
@@ -1090,7 +911,8 @@ Has been moved to xmr.js
 		var domNew=document.getElementById("recipientsNew");			//get the input box
 		var newAddress=domNew.value.trim();								//get the new address to add
 		if (newAddress=="") return error("Address Empty");				//bomb out if empty
-		if (!digibyte.Address.isValid(newAddress)) return error("Invalid Address");	//bomb out if invalid input
+
+		if (!DigiByte.Address.isValid(newAddress)) return error("Invalid Address");	//bomb out if invalid input
 				
 		/* **********************************
 		* 2) Handle donation recomendation  *
@@ -1156,7 +978,7 @@ Has been moved to xmr.js
 						if (amount<SEND_MIN) return reject("Can't send amounts less then "+SEND_MIN);	//if we find an amount that is to small to send bomb out(was already red so they should have known better)
 					}
 				}
-				if (rCount==0) return reject("No recipients.  If intentionally trying to donate entire amount send to D9RVKBjzRvnzUUTHxZBNZ3kfAHrmci1v76");		//if user has not put in any recipients bomb to protect against accidental next double click
+				if (rCount==0) return reject("No recipients.  If intentionally trying to donate entire amount send to DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq");		//if user has not put in any recipients bomb to protect against accidental next double click
 				if (updateRemainder(true)<0) return reject("Can't send more then you have");//user trying to send to much so bomb out
 				resolve();												//no errors found so return false
 			});
@@ -1165,7 +987,16 @@ Has been moved to xmr.js
 			return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
 				openWindow('sending');
 				setTimeout(function() {										//micro delay to 
-					var txs=createTX();
+					//create transactions
+					for (var address in recipients) {
+						var satoshi=Math.round(recipients[address]*100000000);
+						transaction.addOut(address,satoshi);
+					}
+					var txs=transaction.toHex();													//initialise message variable	
+					console.log(txs);
+				//	throw "die so we can see if it worked without sending";		
+					
+					
 					if (txs===false) return reject("Error Forming Request");
 					var txids=[];
 					var waiting=txs.length;

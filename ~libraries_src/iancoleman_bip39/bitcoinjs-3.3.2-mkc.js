@@ -9827,36 +9827,39 @@ module.exports = {
 
 module.exports = {
   "bitcoin": {
-    "messagePrefix": '\x18Bitcoin Signed Message:\n',
-    "bech32": 'bc',
+	"messagePrefix": '\x18DigiByte Signed Message:\n',
+	"bech32": "dgb",
     "bip32": {
-      "public": 0x0488b21e,
-      "private": 0x0488ade4
-    },
-    "pubKeyHash": 0x00,
-    "scriptHash": 0x05,
-    "wif": 0x80
-  },
-  "testnet": {
-    "messagePrefix": '\x18Bitcoin Signed Message:\n',
-    "bech32": 'tb',
-    "bip32": {
-      "public": 0x043587cf,
-      "private": 0x04358394
-    },
-    "pubKeyHash": 0x6f,
-    "scriptHash": 0xc4,
-    "wif": 0xef
-  },
-  "litecoin": {
-    "messagePrefix": '\x19Litecoin Signed Message:\n',
-    "bip32": {
-      "public": 0x019da462,
-      "private": 0x019d9cfe
-    },
-    "pubKeyHash": 0x30,
-    "scriptHash": 0x32,
-    "wif": 0xb0
+		"public": 0x0488B21E,
+		"private": 0x0488ADE4,
+	},
+	"pubKeyHash": 0x1e,
+	"scriptHash": 0x3f,
+	"wif": 0x80,
+	"p2wpkh": {
+		"baseNetwork": "digibyte",
+		"messagePrefix": '\x18DigiByte Signed Message:\n',
+		"bech32": "dgb",
+		"bip32": {
+			"public": 0x0488B21E,
+			"private": 0x0488ADE4,
+		},
+		"pubKeyHash": 0x1e,
+		"scriptHash": 0x63,
+		"wif": 0x80
+	},
+	"p2wpkhInP2sh": {
+		"baseNetwork": "digibyte",
+		"messagePrefix": '\x18DigiByte Signed Message:\n',
+		"bech32": 'dgb',
+		"bip32": {
+			"public": 0x0488B21E,
+			"private": 0x0488ADE4,
+		},
+		"pubKeyHash": 0x1e,
+		"scriptHash": 0x63,
+		"wif": 0x80
+	}
   }
 };
 
@@ -12046,12 +12049,12 @@ TransactionBuilder.prototype.addOutput = function (scriptPubKey, value) {
   if (!this.__canModifyOutputs()) {
     throw new Error('No, this would invalidate signatures');
   }
-
+console.log('make',scriptPubKey, value,baddress,this.network);
   // Attempt to get a script if it's a base58 address string
   if (typeof scriptPubKey === 'string') {
     scriptPubKey = baddress.toOutputScript(scriptPubKey, this.network);
   }
-
+console.log(scriptPubKey);
   return this.tx.addOutput(scriptPubKey, value);
 }
 

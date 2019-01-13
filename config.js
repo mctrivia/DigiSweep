@@ -2,6 +2,7 @@
 * App Configuration       *
 ************************ */
 var appTests=[
+/*
 	{
 		"name":"Core Mobile",
 		"master":"DigiByte seed",
@@ -19,27 +20,25 @@ var appTests=[
 		"master":"Bitcoin seed",
 		"derivation":"m/44'/3'/0'",
 		"start":"D"
-	},
+	},*/
 	{
 		"name":"BIP44 Wallets",
 		"master":"Bitcoin seed",
 		"derivation":"m/44'/20'/0'",
 		"start":"D"
 	},
-	/*
-	{
-		"name":"BIP84 Wallets",
-		"master":"Bitcoin seed",
-		"derivation":"m/84'/20'/0'",
-		"start":"dgb"
-	},
 	{
 		"name":"BIP49 Wallets",
 		"master":"Bitcoin seed",
 		"derivation":"m/49'/20'/0'",
 		"start":"S"
+	},
+	{
+		"name":"BIP84 Wallets",
+		"master":"Bitcoin seed",
+		"derivation":"m/84'/20'/0'",
+		"start":"dgb"
 	}
-	*/
 ];
 
 
