@@ -98,64 +98,8 @@ console.log(messageCount);
 console.log(messageData);				
 				
 			} else {
-        document.open();
-        document.write(msg);
-        document.close();
 throw 'not yet programmed';
-/*
-				//initialise parts
-				messageData=[];
-				for (var i=0;i<messageCount;i++) {
-					messageData.push({"in":[],"out":{},"fee":0});
-				}
-				
-				//copy outputs
-				var input=JSON.parse(JSON.stringify(me.in));
-				var out=JSON.parse(JSON.stringify(me.out));
-			
-				
-				//add inputs and outputs
-				var inputsPerMessage=Math.ceil(me.getInCount()/messageCount);
-				for (var messageI=0;messageI<messageCount;messageI++) {
-					//set fee
-					messageData[messageI].fee=me.getFee(inputsPerMessage);
-					
-					//add inputs
-					var balance=0;
-					for (var i=0;i<inputsPerMessage;i++) {
-						if (input.length==0) {
-							messageData[messageI]=me.getFee(i);
-							break;
-						}
-						var data=input.pop();
-						balance+=data[3];	//satoshi
-						messageData[messageI].in.push(data);
-					}
-					balance-=messageData[messageI].fee;
-					
-					//add outputs if we can add whole output to a message
-					for (var address in out) {
-						var satoshi=out[address];
-						if (satoshi<=balance) {
-							balance-=satoshi;
-							messageData[messageI].out[address]=satoshi;
-							out[address]=undefined;
-						}						
-						if (balance<TX_MIN) break;
-					}
-					
-					//add parts if any left over
-					for (var address in out) {
-					
-					
-					// *************************
-					
-					}
-					
-					
-					
-				}
-				*/
+
 			
 			}
 			
