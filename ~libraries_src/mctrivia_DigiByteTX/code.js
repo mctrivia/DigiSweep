@@ -18,7 +18,7 @@
 				//unlikely but may be valid base58 address so do nothing here
 			}
 		}
-		if ((addressString[0]=='D')||(addressString[0]!='S')) {
+		if ((addressString[0]=='D')||(addressString[0]=='S')) {
 			try {
 				bitcoinjs.bitcoin.address.fromBase58Check(addressString);
 				return true;
