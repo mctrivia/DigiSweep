@@ -27,7 +27,8 @@ domURL.addEventListener('keyup',function() {
 		//text=text.substr(0,b);
 		console.log(text);
 		
-		var hash=bitcoinjs.bitcoin.crypto.sha256(text);
+		var hash=bitcoinjs.bitcoin.crypto.sha256(text.trim());
+		console.log(hash);
 		var path="m/13'";
 		for (var i=0;i<16;i+=4) {
 			path+="/"+((hash[i+3]&0x7f)<<24|hash[i+2]<<16|hash[i+1]<<8|hash[i])+"'";

@@ -52,7 +52,7 @@
 			var cc=canvasCorner["getContext"]("2d");						//get canvas context
 			cc["fillStyle"]=color;
 			
-			//draw corners
+			//Draw Corners
 			function drawCorner(v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11) {
 				cc[beginPath]();
 				cc["moveTo"](v0,v1);
@@ -64,12 +64,12 @@
 				cc[closePath]();
 				cc["fill"]();
 			}
-			if ((i==1)||(i==9)) drawCorner(p4,p4,p2,p4,p2,p3,p3,p3,  1,1.5,p4,p2);			//draw bottom left
+			if ((i==1)||(i==9)) drawCorner(p4,p4,p2,p4,p2,p3,p3,p3,  1,1.5,p4,p2);			//draw bottom right
 			if ((i==8)||(i==9)) drawCorner( 0, 0,p2, 0,p2,p1,p1,p1,  0,0.5, 0,p2);			//draw top left
 			if ((i==4)||(i==6)) drawCorner(p4, 0,p4,p2,p3,p2,p3,p1,0.5,  1,p2,0);			//draw top right
 			if ((i==2)||(i==6)) drawCorner( 0,p4, 0,p2,p1,p2,p1,p3,1.5,  0,p2,p4);			//draw bottom left
 			
-			//draw flats
+			//Draw Flats
 			if (i==3)  cc["fillRect"](0,p2,p4,p2);											//draw bottom
 			if (i==12) cc["fillRect"](0,0,p4,p2);											//draw top
 			if (i==10) cc["fillRect"](0,0,p2,p4);											//draw left
@@ -101,21 +101,24 @@
 		
 		return corner;
 	}
-	function drawLogoBorder(ctx) {
-		ctx[beginPath]();
-		ctx["fillStyle"]="#0066cc";
-		ctx["arc"](0,0,0.891,0,2*Math.PI);
-		ctx[closePath]();
-		ctx["fill"]();
-		ctx[beginPath]();
-		ctx["fillStyle"]="#002352";
-		ctx["arc"](0,0,0.709,0,2*Math.PI);
-		ctx[closePath]();
-		ctx["fill"]();
+	function drawLogoBorder(ctx,symbol) {
+		if (symbol<2) {
+			ctx[beginPath]();
+			ctx["fillStyle"]="#0066cc";
+			ctx["arc"](0,0,0.891,0,2*Math.PI);
+			ctx[closePath]();
+			ctx["fill"]();
+			ctx[beginPath]();
+			ctx["fillStyle"]="#002352";
+			ctx["arc"](0,0,0.709,0,2*Math.PI);
+			ctx[closePath]();
+			ctx["fill"]();
+		}
 	}
 	function logoD(ctx,symbol) {
 		ctx["save"]();
-		if (symbol==0) {
+		
+		var logoDigiByte=function() {
 			ctx["fillStyle"]="#FFFFFF";											//set d color to be white
 			ctx[beginPath]();
 			ctx["moveTo"]( 0.245,-0.361);
@@ -154,7 +157,8 @@
 			ctx[bezierCurveTo]( 0.606,-0.260, 0.392,-0.346, 0.245,-0.361);
 			ctx[closePath]();
 			ctx["fill"]();															//fill in d area
-		} else {
+		}
+		var logoDigiID=function() {
 			ctx["miterLimit"]="0";
 			ctx["save"]();
 			ctx["save"]();
@@ -344,6 +348,231 @@
 			ctx[closePath]();
 			ctx["fill"]();
 			ctx["restore"]();
+		}
+		var logoAntum=function() {
+			ctx["translate"](-0.88,-0.8);
+			ctx["scale"](0.07,0.07);
+			ctx["save"]();
+			ctx["strokeStyle"]="rgba(0,0,0,0)";
+			ctx["miterLimit"]=4;
+			ctx["scale"](0.465,0.465);
+			ctx["translate"](0.222,0);
+			ctx["scale"](0.463,0.463);
+			ctx["save"]();
+			var g = ctx["createLinearGradient"](165.69,271.09,165.69,205.77);
+			g["addColorStop"](0,"#dfddda");
+			g["addColorStop"](1,"#b7ced7");
+			
+			var getCTX=function(x,g) {
+				var canvas = document["createElement"]("canvas");
+				canvas["width"] = 1263;
+				canvas["height"] = 689;				
+				var ctx1 = canvas["getContext"]("2d");								
+				ctx1["fillStyle"]=g;
+				ctx1["save"]();
+				ctx1["strokeStyle"]="rgba(0,0,0,0)";
+				ctx1["miterLimit"]=4;
+				ctx1[beginPath]();
+				ctx1["moveTo"](0,0);
+				ctx1[lineTo](1263,0);
+				ctx1[lineTo](1263,689);
+				ctx1[lineTo](0,689);
+				ctx1[closePath]();
+				ctx1["clip"]();
+				ctx1["save"]();
+				switch (x) {
+					case 1:
+					ctx1["translate"](3.33,-5.24);
+					ctx1["rotate"](0.0113);
+					break;
+					
+					case 2:
+					ctx1["transform"](-1,-0.05,-0.05,1,1403.03,43.69);
+					break;
+					
+					case 3:
+					ctx1["translate"](-361.39,43.69);
+					ctx1["rotate"](-0.0482);
+			
+				}
+				ctx1["save"]();
+				ctx1[beginPath]();
+				ctx1["moveTo"](-10000,-10000);
+				ctx1[lineTo](20000,-10000);
+				ctx1["quadraticCurveTo"](20000,-10000,20000,-10000);
+				ctx1[lineTo](20000,20000);
+				ctx1["quadraticCurveTo"](20000,20000,20000,20000);
+				ctx1[lineTo](-10000,20000);
+				ctx1["quadraticCurveTo"](-10000,20000,-10000,20000);
+				ctx1[lineTo](-10000,-10000);
+				ctx1["quadraticCurveTo"](-10000,-10000,-10000,-10000);
+				ctx1[closePath]();
+				ctx1["fill"]();
+				ctx1["stroke"]();
+				ctx1["restore"]();
+				ctx1["restore"]();
+				ctx1["restore"]();
+				return ctx1;
+			}
+			
+			var ctx1=getCTX(1,g);
+			var p = ctx1["createPattern"](ctx1.canvas,"no-repeat");
+			ctx["fillStyle"]=p;
+			ctx["translate"](-108.36,-202.39);
+			ctx[beginPath]();
+			ctx["moveTo"](167.06,202.39);
+			ctx[lineTo](166.84,202.79);
+			ctx[bezierCurveTo](165.84,216.38,144.22,257.92,144.22,257.92);
+			ctx[lineTo](143.67,257.92);
+			ctx[lineTo](156.14,267.58);
+			ctx["translate"](166.24,270.338);
+			ctx["arc"](0,0,10.47,-2.875,-1.592,0);
+			ctx["translate"](-166.24,-270.338);
+			ctx["translate"](165.627,270.233);
+			ctx["arc"](0,0,10.37,-1.533,-0.32,0);
+			ctx["translate"](-165.627,-270.233);
+			ctx[lineTo](188.2,258.42);
+			ctx[lineTo](188.42,258.01);
+			ctx[bezierCurveTo](188.42,258.01,167.79,216,167.06,202.39);
+			ctx[closePath]();
+			ctx["fill"]();
+			ctx["stroke"]();
+			ctx["restore"]();
+			ctx["save"]();
+			g = ctx["createLinearGradient"](1184.86,332,1213.41,282.55);
+			g["addColorStop"](0,"#0098d5");
+			g["addColorStop"](1,"#164c8e");
+			var ctx2 = getCTX(2,g);
+			p = ctx2["createPattern"](ctx2.canvas,"no-repeat");
+			ctx["fillStyle"]=p;
+			ctx["translate"](-108.36,-202.39);
+			ctx[beginPath]();
+			ctx["moveTo"](223,308.18);
+			ctx[lineTo](222.61,308.18);
+			ctx[bezierCurveTo](217.61,305.62,206.78,302.68,196.1,301.12);
+			ctx["translate"](160.783,539.68);
+			ctx["arc"](0,0,241.16,-1.423,-1.537,1);
+			ctx["translate"](-160.783,-539.68);
+			ctx[lineTo](169.59,280.41);
+			ctx[bezierCurveTo](165.01,268.47,169.59,280.41,171.37,276);
+			ctx[bezierCurveTo](173.03,271.86,174.25,277.36,171.75,274);
+			ctx[lineTo](189.15,261.44);
+			ctx[lineTo](189.55,261.44);
+			ctx[bezierCurveTo](189.55,261.44,213,301.05,223,308.18);
+			ctx[closePath]();
+			ctx["fill"]();
+			ctx["stroke"]();
+			ctx["restore"]();
+			ctx["save"]();
+			g = ctx["createLinearGradient"](26442.139,14187.645,28023.673,11874.869);
+			g["addColorStop"](0,"#0098d5");
+			g["addColorStop"](1,"#164c8e");
+			var ctx3 = getCTX(3,g);
+			p = ctx3["createPattern"](ctx3.canvas,"no-repeat");
+			ctx["fillStyle"]=p;
+			ctx["translate"](-108.36,-202.39);
+			ctx[beginPath]();
+			ctx["moveTo"](108.36,308.18);
+			ctx[lineTo](108.75,308.18);
+			ctx[bezierCurveTo](113.75,305.62,124.58,302.68,135.26,301.12);
+			ctx["translate"](170.837,539.641);
+			//ctx.rotate(0);
+			ctx["arc"](0,0,241.16,-1.719,-1.606,0);
+			//ctx.rotate(0);
+			ctx["translate"](-170.837,-539.641);
+			ctx[lineTo](161.78,280.38);
+			ctx[bezierCurveTo](166.36,268.44,161.78,280.38,160,275.97);
+			ctx[bezierCurveTo](158.34,271.83,157.12,277.33,159.62,273.97);
+			ctx[lineTo](142.22,261.41);
+			ctx[lineTo](141.82,261.41);
+			ctx[bezierCurveTo](141.82,261.41,118.33,301.05,108.36,308.18);
+			ctx[closePath]();
+			ctx["fill"]();
+			ctx["stroke"]();
+			ctx["restore"]();
+			ctx["save"]();
+			ctx["fillStyle"]="#fff";
+			ctx["translate"](-108.36,-202.39);
+			ctx[beginPath]();
+			ctx["moveTo"](178.91,271.58);
+			ctx[bezierCurveTo](178.91,278.88,173.27,284.79,166.31,284.79);
+			ctx[bezierCurveTo](159.35,284.79,153.71,278.88,153.71,271.58);
+			ctx[bezierCurveTo](153.71,264.28,159.35,258.37,166.31,258.37);
+			ctx[bezierCurveTo](173.27,258.37,178.91,264.29,178.91,271.58);
+			ctx[closePath]();
+			ctx["fill"]();
+			ctx["stroke"]();
+			ctx["restore"]();
+			ctx["save"]();
+			ctx["fillStyle"]="#fff";
+			ctx[beginPath]();
+			ctx["moveTo"](33.86,59.01);
+			ctx[lineTo](35.32,55.53);
+			ctx[lineTo](46.33,64.07);
+			ctx[lineTo](45.47,67.39);
+			ctx["fill"]();
+			ctx["stroke"]();
+			ctx["restore"]();
+			ctx["save"]();
+			ctx["fillStyle"]="#fff";
+			ctx[beginPath]();
+			ctx["moveTo"](81.18,58.99);
+			ctx[lineTo](80.07,55.63);
+			ctx[lineTo](69.18,63.2);
+			ctx[lineTo](70.3,66.58);
+			ctx["fill"]();
+			ctx["stroke"]();
+			ctx["restore"]();
+			ctx["save"]();
+			ctx["fillStyle"]="#fff";
+			ctx[beginPath]();
+			ctx["moveTo"](52.96,80.53);
+			ctx[lineTo](61.14,80.53);
+			ctx[lineTo](60.63,96.28);
+			ctx[lineTo](54.02,96.28);
+			ctx[lineTo](52.96,80.53);
+			ctx[lineTo](52.96,80.53);
+			ctx[closePath]();
+			ctx["fill"]();
+			ctx["stroke"]();
+			ctx["restore"]();
+			ctx["restore"]();
+		}
+		
+		
+		
+		
+		
+		
+		
+		switch (symbol) {
+			
+			//DigiByte
+			case 0:
+			logoDigiByte();
+			break;
+			
+			//Digi ID
+			case 1:
+			logoDigiID();
+			break;
+			
+			//Antum ID
+			case 2:
+			logoAntum();
+			break;
+			
+			//Open ANtum ID
+			case 3:
+			logoAntum();
+			ctx["restore"]();
+			ctx["save"]();
+			ctx["translate"](0,0.24);
+			ctx["scale"](0.1,0.1);
+			drawLogoBorder(ctx,0);
+			logoDigiByte();
+			//ctx["restore"]();
+			
 		}		
 		ctx["restore"]();
 	}
@@ -356,7 +585,8 @@
 			addLogo=obj["logo"]||0,
 			radius=obj["r"]||0,
 			symbol=obj["symbol"]||0;
-		
+			
+			
 		//figure out alphabet to use
 		var alphabet="Byte";
 		if (text==text["replace"](/[^0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ \$\%\*\+\-\.\/\:]/g,"")) {
@@ -391,14 +621,14 @@
 		if (addLogo<5) {
 			logoSize*=Math["min"](Math["floor"]((Math["sqrt"](0.2*count*count)+1)/2)-0.5,(count-16)*0.5);	//cover up to 20% of logo but make sure not covering eyes
 		} else if(addLogo<7) {
-			logoSize*=(count-1)*0.5;												//logo mostly translucent so rules are simpler
+			logoSize*=(count-1)*0.4;												//logo mostly translucent so rules are simpler
 		} else {
 			logoSize*=Math["min"](1.12*Math["sqrt"](count*count*0.5)-11.08,count*0.56);	//make logo as big as possible to not touch eyes
 		}		
 		
 		//draw corners
 		function drawGrid(color) {
-			var corners=createCorners(pixelSize,radius,color);			//draw non dark areas in white
+			var corners=createCorners(pixelSize,Math.abs(radius),color);			//draw non dark areas in white
 			var rsMax=logoSize/pixelSize;								//get number of modules logo is across
 			rsMax*=rsMax;												//get square of radius
 		
@@ -415,6 +645,11 @@
 			for (var y=-1;y<=count;y++) {											//go over each row
 				for (var x=-1;x<=count;x++) {										//go over each column
 					var i=numFilter(x,y)*8+numFilter(x+1,y)*4+numFilter(x,y+1)*2+numFilter(x+1,y+1);	//get corner type
+					if (radius<0) { //draw only eyes
+						if ((x>6) && (y>6)) i=15;
+						if ((x>6) && (x<count-8)) i=15;
+						if ((y>6) && (y<count-8)) i=15;
+					}					
 					ctx["drawImage"](corners[i],(x+0.5)*pixelSize,(y+0.5)*pixelSize);	//draw the corner on canvas
 				}
 			}		
@@ -440,12 +675,15 @@
 			ctx["fill"]();
 		}
 		if (addLogo>0) {
-			drawLogoBorder(ctx);												//draw the outer boarder
+			drawLogoBorder(ctx,symbol);												//draw the outer boarder
 			logoD(ctx,symbol);															//define d area	
 		}
 		ctx["restore"]();
 		ctx["restore"]();
-		if ((addLogo==5)||(addLogo==7)) {														
+		
+		
+		//draw dots
+		if ((addLogo==5)||(addLogo==7)||(radius<0)) {														
 			ctx["save"]();
 			ctx["transform"](pixelSize,0,0,pixelSize,pixelSize/2,pixelSize/2);		//adjust size to make drawing dots easy
 			ctx["save"]();
@@ -460,6 +698,7 @@
 					}
 					if ((addLogo==5)&&(!qr["isDark"](x,y))) drawDot(0.5,"rgba(255,255,255,0.5)");	//make translucent white dots
 					if (addLogo==7) drawDot(0.2,(qr["isDark"](x,y))?"#000000":"#FFFFFF");			//make small dot for both colors
+					if (radius<0) drawDot(0.4,(qr["isDark"](x,y))?"#000000":"#FFFFFF");
 				}
 			}
 			ctx["restore"]();
@@ -467,6 +706,21 @@
 		}	
 		if (addLogo==6) {
 			drawGrid("rgba(255,255,255,0.5)");
+		}
+		
+		//draw x if DigiID and uri does not match current domain
+		if ((symbol>0) && (window.location.hostname!=text.split('/')[2])) {
+			ctx["save"]();
+			ctx["strokeStyle"]="#ff0000";
+			ctx["lineWidth"]=pixelSize;
+			
+			ctx["moveTo"](0,0);
+			ctx[lineTo](count*pixelSize,count*pixelSize);
+			ctx["stroke"]();
+			ctx["moveTo"](count*pixelSize,0);
+			ctx[lineTo](0,count*pixelSize);
+			ctx["stroke"]();
+			ctx["restore"]();
 		}
 		
 		ctx["restore"]();														//restore so image is centered
@@ -509,7 +763,7 @@
 	//DigiQR
 	window["DigiQR"]={																//create interface for external scripts
 		"request": function(address,amount,size,logo,radius) {					//request payment interface
-			return noProcess("digibyte:"+address+"?amount="+(amount)["toFixed"](8),size,logo,radius); 
+			return noProcess("digibyte:"+address+((amount==0)?0:"?amount="+(amount)["toFixed"](8)),size,logo,radius); 
 		},
 		"address": noProcess,													//general address interface
 		"explorer": function(address,size,logo,radius) {						//explorer interface
@@ -519,6 +773,12 @@
 		"gen": getQRCode,
 		"id": function(uri,size,logo,radius) {
 			return noProcess(uri,size,logo,radius,1);
+		},
+		"antum": function(uri,size,logo,radius) {
+			return noProcess(uri,size,logo,radius,2);
+		},
+		"openantum": function(uri,size,logo,radius) {
+			return noProcess(uri,size,logo,radius,3);
 		},
 		"auto": autoLoad
 	};

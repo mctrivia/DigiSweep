@@ -1,3 +1,4 @@
+/*
 bitcoinjs.bitcoin.networks.bitcoin = {
 	messagePrefix: '\x18DigiByte Signed Message:\n',
 	bech32: 'dgb',
@@ -9,7 +10,7 @@ bitcoinjs.bitcoin.networks.bitcoin = {
 	scriptHash: 0x3f,
 	wif: 0x80
 };
-/*
+
 bitcoinjs.bitcoin.networks.bitcoin.p2wpkh = {
 	baseNetwork: "digibyte",
     messagePrefix: '\x18DigiByte Signed Message:\n',

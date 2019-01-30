@@ -223,12 +223,12 @@
         return extendedKey;
 	}
 	
-	function getHDKey(seedPhrase,passPhrase,derivationPath) {
+	function getHDKey(seedPhrase,passPhrase) {
 		//set defaults
 		passPhrase=passPhrase||"";
 		
 		/* *************************
-		* 1) Set Mnemonic Language *
+		* 1) Get Mnemonic Language *
 		************************* */
 		var language = getLanguage(seedPhrase);
 		// Load the bip39 mnemonic generator for this language if required
@@ -268,5 +268,5 @@
 	window['bip39']["getHDKey"]=getHDKey;
 	window['bip39']["findPhraseErrors"]=findPhraseErrors;
 	window['bip39']["getHDKeyFromXPrv"]=getHDKeyFromXPrv;
-	
+	window['bip39']["english"]=WORDLISTS['english'];
 })();
