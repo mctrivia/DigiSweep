@@ -1,4 +1,3 @@
-
 <html>
 <head>
 <meta charset="utf-8">        
@@ -22,28 +21,34 @@
 	<input type="button" page="pageKeys" class="next" value="Next">
 </div>
 <div id="pageKeys" class="page">
-	Private Key(s) or Seed Phrase: <br>
+	<h1>Step 1: Locating Funds</h1>
+	This app needs your private information in order to find and move your funds.  It is safe to put your information here because it is not recorded or transmitted from your machine.  Also when you are done you will have moved the funds to a new wallet so the information will not be helpful to hackers.<br>
+	&nbsp;<br>
+	If you have a recovery file use this to upload: <input type="file" id="keysFile"><br>
+	Most newer wallets use a 12 to 24 word seed phrase or a private key.  Please enter below:<br>
 	<textarea id="wif" cols="40" rows="5"></textarea><br>
-	or <input type="file" id="keysFile"><br>&nbsp;<br>
+	*Multiple keys can be entered with coma(,) or spaces in between.<br>
+	<br>&nbsp;<br>
 	Server: <select id="server">
 		<option value="https://digiexplorer.info/api/" selected>Main(DigiExplorer.info)</option>
 		<option value="https://explorer.digibyteprojects.com/api/">Backup 1(digibyteprojects.com)</option>
-		<option value="https://explorer-2.us.digibyteservers.io/api/">Backup 2(DigiByteServers.io)</option>
 	</select><br>
-	<input type="button" page="pageBalances" class="next" value="Next">
-	*Multiple keys can be entered with coma(,) or spaces in between<br>
+	<input type="button" page="pageBalances" class="next" value="Find my funds">
 </div>
 <div id="pageBalances" class="page">
+	<h1>Step 2: Verify Balance</h1>
+	On the next page we will get where to send the funds to.  For now please verify we have found all the funds you are trying to recover.<br>
 	<div id="balanceTable"></div>
 	<div id="balanceTotals">Total DGB Found: <span id="balanceTotal"></span> DGB</div>
 	<input id="export" type="button" value="Export Keys(not recommended) - Safer to click Next below"><br>
 	<h3>Please verify this is expected value</h3>
-	<br><input type="button" page="pageKeys" class="back" value="Add more wallets"><input type="button" page="pageRecipients" class="next" value="Next">
+	<br><input type="button" page="pageKeys" class="back" value="Add more wallets"><input type="button" page="pageRecipients" class="next" value="Set where to send">
 </div>
 <div id="pageRecipients" class="page">
+	<h1>Step 3: Recipients</h1>
 	<h3>Pick up to 100 addresses to send the <span id="recipientTotal"></span> DGB to</h3>
 	<b>If you need a reliable wallet to send your DigiByte to I recomend <a href="https://www.coinomi.com/downloads/" target="_blank">Coinomi</a>.</b><br>
-	Recipient Address: <input type="text" id="recipientsNew"><input type="button" id="recipientsAdd" value="Add"><br>
+	Recipient Address(Must start with S or D): <input type="text" id="recipientsNew"><input type="button" id="recipientsAdd" value="Add"><br>
 	<div id="recipientsTable"></div>
 	<br><input type="button" page="pageBalances" class="back" value="Back"><input id="pageRecipientsNext" type="button" page="pageSent" class="next" value="Send" disabled>
 </div>

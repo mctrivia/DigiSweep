@@ -979,7 +979,7 @@ Has been moved to xmr.js
 						if (amount<SEND_MIN) return reject("Can't send amounts less then "+SEND_MIN);	//if we find an amount that is to small to send bomb out(was already red so they should have known better)
 					}
 				}
-				if (rCount==0) return reject("No recipients.  If intentionally trying to donate entire amount send to DMw9wz6KHsvbvXsmo1Q8BajWcohYwjqwoq");		//if user has not put in any recipients bomb to protect against accidental next double click
+				if (rCount==0) return reject("No recipients.  If intentionally trying to donate entire amount send to D9RVKBjzRvnzUUTHxZBNZ3kfAHrmci1v76");		//if user has not put in any recipients bomb to protect against accidental next double click
 				if (updateRemainder(true)<0) return reject("Can't send more then you have");//user trying to send to much so bomb out
 				resolve();												//no errors found so return false
 			});
