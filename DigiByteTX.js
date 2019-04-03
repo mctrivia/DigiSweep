@@ -123,6 +123,8 @@ return false;	//not yet supporting segwit
 				messageData=[{"in":me.in,"out":me.out,"fee":Math["round"](me["getFee"]()),"data":me.data}];
 				
 			} else {
+throw("Stop do to potential bug.  Sorry for inconvienence.");return;
+				
 				//initialise parts
 				messageData=[];
 				for (var i=0;i<messageCount;i++) {
