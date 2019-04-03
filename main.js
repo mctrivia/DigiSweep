@@ -972,15 +972,19 @@ Has been moved to xmr.js
 			return new Promise(function(resolve, reject) {					//return promise since execution is asyncronous
 			
 				var rCount=0;
+				var sendingAmount=0;
 				for (var address in recipients) {							//go through each recipient
 					var amount=recipients[address];							//get amount to send to them
 					if (amount!=0) {										//if amount is 0 ignore it
 						rCount++;											//keep traqck of number of real recipients
+						sendingAmount+=amount;
 						if (amount<SEND_MIN) return reject("Can't send amounts less then "+SEND_MIN);	//if we find an amount that is to small to send bomb out(was already red so they should have known better)
 					}
 				}
 				if (rCount==0) return reject("No recipients.  If intentionally trying to donate entire amount send to D9RVKBjzRvnzUUTHxZBNZ3kfAHrmci1v76");		//if user has not put in any recipients bomb to protect against accidental next double click
-				if (updateRemainder(true)<0) return reject("Can't send more then you have");//user trying to send to much so bomb out
+				var donation=updateRemainder(true);							//get amount of donation
+				if (donation<0) return reject("Can't send more then you have");//user trying to send to much so bomb out
+				if (donation>sendingAmount) reject("Warning really large donation detected.  If intentionally trying to donate this much send to D9RVKBjzRvnzUUTHxZBNZ3kfAHrmci1v76");	//greater then 50% donation.  Probably an error.
 				resolve();												//no errors found so return false
 			});
 		},
