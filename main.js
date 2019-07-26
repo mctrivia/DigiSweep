@@ -29,7 +29,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 "use strict";
 (function(window,document,undefined){
 	const MAX_REQUESTS=4;													//max number of concurent requests to explorer server
-	const MAX_UNUSED=2;													//bip39 giveup point recomend 20
+	const MAX_UNUSED=2;													//bip39 giveup point recommend 20
 	const SEND_MIN=0.0007;													//minimum amount that can be sent to an address
 	
 	
@@ -916,7 +916,7 @@ Has been moved to xmr.js
 		if (!DigiByte.Address.isValid(newAddress)) return error("Invalid Address");	//bomb out if invalid input
 				
 		/* **********************************
-		* 2) Handle donation recomendation  *
+		* 2) Handle donation recommendation  *
 		********************************** */
 		if (Object.keys(recipients).length==0) {						//see if first recipient
 			var remainder=updateRemainder(true);						//get the amount of DigiByte that is usable
