@@ -90,6 +90,20 @@
 }
 
 
+#recipientsAdd {
+	width: 100px;
+}
+.flex-container {
+	display: flex;
+	width: 100%;
+}
+.fill-width {
+	flex: 1;
+}
+[contenteditable] {
+    border: 1px solid gray;
+}
+
 
 
 #shadow {

@@ -904,16 +904,43 @@ Has been moved to xmr.js
 		this.style.backgroundColor='rgba(255,0,0,'+(value<SEND_MIN&&value!=0?'1':'0')+')';//make red if invalid value.  clear otherwise
 		updateRemainder();												//update the donate value
 	}
+	
+	
+	
+	
 	document.getElementById("recipientsAdd").addEventListener('click', function() {
 		
 		/* **********************************
 		* 1) Validate Address               *
 		********************************** */
 		var domNew=document.getElementById("recipientsNew");			//get the input box
-		var newAddress=domNew.value.trim();								//get the new address to add
+		var newAddress=domNew.innerHTML.trim().replace(/<[^>]*>?/gm,'');	//get the new address to add
 		if (newAddress=="") return error("Address Empty");				//bomb out if empty
 
-		if (!DigiByte.Address.isValid(newAddress)) return error("Invalid Address");	//bomb out if invalid input
+		if (!DigiByte.Address.isValid(newAddress)) {
+			if (newAddress.toUpperCase().substr(0,4)=='DGB1') {
+				var html=newAddress;
+				
+				//find error information
+				var a=bech32Check(newAddress,'dgb');
+				if (a.error!=null) {
+					//handle errors
+					html='';
+					for (var p = 0; p < newAddress.length; ++p) {
+						if (a.pos.indexOf(p) != -1) {
+							html += '<a style="color:red">' + newAddress.charAt(p) + '</a>';
+						} else {
+							html += newAddress.charAt(p);
+						}
+					}
+				}
+				
+				//save html out
+				domNew.innerHTML=html;
+			}
+			
+			return error("Invalid Address");	//bomb out if invalid input
+		}
 				
 		/* **********************************
 		* 2) Handle donation recommendation  *

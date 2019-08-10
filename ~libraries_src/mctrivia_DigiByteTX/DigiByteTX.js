@@ -3,24 +3,20 @@
 	const TX_MIN = 70000;
 	const TX_MAX_UTXO = 60;
 	
-	var digibyte=window['require']('digibyte');										//load digibyte object.  should check digibyte.min.js has not been edited since last confirmation of good standing
-	digibyte['Transaction']['FEE_PER_KB']=TX_FEE;
 	var bitcoinjs=window['bitcoinjs'];
 	
 	
 	function isValidAddress(addressString) {
 		var bitcoinAddress=bitcoinjs['bitcoin']['address'];
 		if (addressString['toUpperCase']()['substr'](0,4)=='DGB1') {
-return false;	//not yet supporting segwit
-/*			try {
+			try {
 				bitcoinAddress['fromBech32'](addressString);
 				return true;
 			} catch(e) {
 				//unlikely but may be valid base58 address so do nothing here
-			}*/
+			}
 		}
 		if ((addressString[0]=='D')||(addressString[0]=='S')) {
-//if (addressString[0]=='S') return false; //not yet supporting segwit
 			try {
 				bitcoinAddress['fromBase58Check'](addressString);
 				return true;
@@ -74,7 +70,8 @@ return false;	//not yet supporting segwit
 	};
 	DigiByteTX.prototype={
 		"addIn":		function(utxo,priv) {
-			this.in.push([utxo,priv]);
+			var pkey=bitcoinjs['bitcoin']['ECPair']['fromWIF'](priv);
+			this.in.push([utxo,pkey]);
 		},
 		"addData":		function(data) {
 			if (data.length>80) throw data+" is to long";
@@ -126,40 +123,40 @@ return false;	//not yet supporting segwit
 				//initialise parts
 				messageData=[];
 				for (var i=0;i<messageCount;i++) {
-					messageData.push({"in":[],"out":{},"fee":0,"data":[]});
+					messageData['push']({"in":[],"out":{},"fee":0,"data":[]});
 				}
 				
 				//copy outputs
-				var input=JSON.parse(JSON.stringify(me.in));
-				var out=JSON.parse(JSON.stringify(me.out));
-				var data=JSON.parse(JSON.stringify(me.data));
+				var input=JSON['parse'](JSON['stringify'](me.in));
+				var out=JSON['parse'](JSON['stringify'](me.out));
+				var data=JSON['parse'](JSON['stringify'](me.data));
 			
 				
 				//add inputs and outputs
-				var inputsPerMessage=Math.ceil(me.getInCount()/messageCount);
+				var inputsPerMessage=Math['ceil'](me['getInCount']()/messageCount);
 				for (var messageI=0;messageI<messageCount;messageI++) {
 					//set fee
-					messageData[messageI].fee=me.getFee(inputsPerMessage);
+					messageData[messageI]['fee']=me['getFee'](inputsPerMessage);
 					
 					//add inputs
 					var balance=0;
 					for (var i=0;i<inputsPerMessage;i++) {
 						if (input.length==0) {
-							messageData[messageI]=me.getFee(i);
+							messageData[messageI]=me['getFee'](i);
 							break;
 						}
 						var currentInput=input.pop();
 						balance+=currentInput[0]['amount'];	//satoshi
-						messageData[messageI].in.push(currentInput);
+						messageData[messageI].in['push'](currentInput);
 					}
-					balance=Math.round(balance*100000000-messageData[messageI].fee);	//convert to satoshi and remove fee
+					balance=Math.round(balance*100000000-messageData[messageI]['fee']);	//convert to satoshi and remove fee
 					
 					//add outputs if we can add whole output to a message
 					for (var address in out) {
 						var satoshi=out[address];
 						if (satoshi<=balance) {
 							balance-=satoshi;
-							messageData[messageI].out[address]=satoshi;
+							messageData[messageI]['out'][address]=satoshi;
 							out[address]=undefined;
 						}						
 						if (balance<TX_MIN) break;
@@ -169,7 +166,7 @@ return false;	//not yet supporting segwit
 					if (balance>=TX_MIN) {
 						for (var address in out) {
 							out[address]-=balance;							//remove remainder from output
-							messageData[messageI].out[address]=balance;		//add funds to message part
+							messageData[messageI]['out'][address]=balance;		//add funds to message part
 							break;											//we only have room for 1 anyways
 						}
 					}
@@ -179,12 +176,12 @@ return false;	//not yet supporting segwit
 				}
 			
 				//add any data if any
-				var dataCountPerMessage=Math.ceil(me.data.length/messageCount);
+				var dataCountPerMessage=Math.ceil(me.data['length']/messageCount);
 				for (var i=0;i<messageCount;i++) {
-					if (data.length==0) break;
+					if (data['length']==0) break;
 					for (var ii=0;ii<dataCountPerMessage;ii++) {
-						if (data.length==0) break;
-						messageData[i].data.push(data.pop());
+						if (data['length']==0) break;
+						messageData[i].data['push'](data['pop']());
 					}
 				}
 			}
@@ -192,43 +189,66 @@ return false;	//not yet supporting segwit
 			var hex=[];
 			for (var message of messageData) {
 				
-				var tx= new digibyte['Transaction']();
+				var tx=new bitcoinjs['bitcoin']['TransactionBuilder']();
 				
+				//start balance tracking less fee
+				var balance=0-message['fee'];
 				
 				//add inputs
 				var utxos=[];
-				for (var data of message.in) {
-					utxos.push(data[0]);
+				for (var data of message['in']) {
+					if (data[0]['address'].substr(0,4)=='dgb1') {
+						var scriptPubkey = bitcoinjs['bitcoin']['script']['witnessPubKeyHash']['output']['encode'](
+							bitcoinjs['bitcoin']['crypto']['hash160'](
+								data[1]['getPublicKeyBuffer']()
+							)
+						);
+						tx['addInput'](data[0]["txid"],data[0]["vout"],null, scriptPubkey);
+					} else {
+						tx['addInput'](data[0]["txid"],data[0]["vout"]);
+					}
+					balance+=data[0]["amount"]*100000000;
 				}
-				tx['from'](utxos);
 				
 				//add data
-				for (var data of message.data) {
-					tx['addData'](data);
-				}
-				
-				//add outputs
-				for (var address in message.out) {
-					tx['to'](
-						digibyte['Address']['fromString'](address),				//add address encoded correctly for transaction
-						message.out[address]								//satoshis to send
+				for (var data of message['data']) {
+					tx['addOutput'](
+						bitcoinjs['bitcoin']['script']['compile']([
+							bitcoinjs['bitcoin']['OP_RETURN'],
+							data
+						]),
+						0
 					);
+				}
+								
+				//add outputs
+				for (var address in message['out']) {
+					tx['addOutput'](
+						address,											//add address encoded correctly for transaction
+						message['out'][address]								//satoshis to send
+					);
+					balance-=message['out'][address];
 				}
 				
 				//add change if valid
-				if (me.change!='') {
-					tx['change'](digibyte['Address']['fromString'](me.change));	//set change address as donate address 
+				if ((me.change!='') && (balance>TX_MIN)) {
+					tx['addOutput'](
+						me.change,											//add address encoded correctly for transaction
+						balance												//satoshis to send
+					);
 				}
 				
 				//sign tx
-				var keys=[];
-				for (var data of message.in) {
-					keys.push(data[1]);
+				for (var index in message['in']) {
+					if (message['in'][index][0]['address'].substr(0,4)=='dgb1') {
+						tx['sign'](parseInt(index),message['in'][index][1], null, null, Math.round(message['in'][index][0]['amount']*100000000));
+					} else {
+						tx['sign'](parseInt(index),message['in'][index][1]);
+					}
 				}
-				tx['sign'](keys);
 				
 				//generate raw transaction
-				hex.push(tx['serialize']());
+				hex.push(tx['build']()['toHex']());
 			}
 			
 			if (me.autoSplit==false) return hex[0];

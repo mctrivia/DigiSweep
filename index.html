@@ -48,7 +48,8 @@
 	<h1>Step 3: Recipients</h1>
 	<h3>Pick up to 100 addresses to send the <span id="recipientTotal"></span> DGB to</h3>
 	<b>If you need a reliable wallet to send your DigiByte to I recommend <a href="https://www.coinomi.com/downloads/" target="_blank">Coinomi</a>.</b><br>
-	Recipient Address(Must start with S or D): <input type="text" id="recipientsNew"><input type="button" id="recipientsAdd" value="Add"><br>
+	Recipient Address(Must start with S or D): <br>
+	<div class="flex-container"><div id="recipientsNew" class="fill-width" contenteditable></div><input type="button" id="recipientsAdd" value="Add"></div>
 	<div id="recipientsTable"></div>
 	<br><input type="button" page="pageBalances" class="back" value="Back"><input id="pageRecipientsNext" type="button" page="pageSent" class="next" value="Send" disabled>
 </div>
@@ -124,7 +125,7 @@ only signatures proving you know them.
 
 <script src="config.js"></script>
 <script src="libraries.min.js"></script>
-<script src="DigiByteTX.js"></script>
+
 <script src="main.js"></script>
 </body>
 </html>
