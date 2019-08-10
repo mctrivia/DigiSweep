@@ -204,6 +204,16 @@
 							)
 						);
 						tx['addInput'](data[0]["txid"],data[0]["vout"],null, scriptPubkey);
+					} else if (data[0]['address'].substr(0,1)=='S') {
+						var witnessScript = bitcoinjs['bitcoin']['script']['witnessPubKeyHash']['output']['encode'](
+							bitcoinjs['bitcoin']['crypto']['hash160'](
+								data[1]['getPublicKeyBuffer']()
+							)
+						);
+						var scriptPubKey = bitcoinjs['bitcoin']['script']['scriptHash']['output']['encode'](
+							bitcoinjs['bitcoin']['crypto']['hash160'](witnessScript)
+						);
+						tx['addInput'](data[0]["txid"],data[0]["vout"],null, scriptPubkey);
 					} else {
 						tx['addInput'](data[0]["txid"],data[0]["vout"]);
 					}
@@ -240,10 +250,15 @@
 				
 				//sign tx
 				for (var index in message['in']) {
-					if (message['in'][index][0]['address'].substr(0,4)=='dgb1') {
-						tx['sign'](parseInt(index),message['in'][index][1], null, null, Math.round(message['in'][index][0]['amount']*100000000));
+					var data=message['in'][index];
+					if (data[0]['address'].substr(0,4)=='dgb1') {
+						tx['sign'](parseInt(index),data[1], null, null, Math.round(data[0]['amount']*100000000));
+					} else if (data[0]['address'].substr(0,1)=='S') {
+						var pubKeyHash = bitcoinjs['bitcoin']['crypto']['hash160'](data[1]['getPublicKeyBuffer']());
+						var redeemScript = bitcoinjs['bitcoin']['script']['witnessPubKeyHash']['output']['encode'](pubKeyHash);
+						tx['sign'](parseInt(index),data[1], redeemScript, null, Math.round(data[0]['amount']*100000000));
 					} else {
-						tx['sign'](parseInt(index),message['in'][index][1]);
+						tx['sign'](parseInt(index),data[1]);
 					}
 				}
 				
