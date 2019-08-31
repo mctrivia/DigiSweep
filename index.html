@@ -32,7 +32,8 @@
 	Server: <select id="server">
 		<option value="https://digiexplorer.info/api/" selected>Main(DigiExplorer.info)</option>
 		<option value="https://explorer.digibyteprojects.com/api/">Backup 1(digibyteprojects.com)</option>
-	</select><br>
+	</select>
+	Check for DigiAssets(https://api.digiassets.net): <input id="assetUse" type="checkbox" checked><br>&nbsp;<br>
 	<input type="button" page="pageBalances" class="next" value="Find my funds">
 </div>
 <div id="pageBalances" class="page">
@@ -49,7 +50,7 @@
 	<h3>Pick up to 100 addresses to send the <span id="recipientTotal"></span> DGB to</h3>
 	<b>If you need a reliable wallet to send your DigiByte to I recommend <a href="https://www.coinomi.com/downloads/" target="_blank">Coinomi</a>.</b><br>
 	Recipient Address(Must start with S or D): <br>
-	<div class="flex-container"><div id="recipientsNew" class="fill-width" contenteditable></div><input type="button" id="recipientsAdd" value="Add"></div>
+	<div class="flex-container"><div id="recipientsNew" class="addressBox fill-width" contenteditable></div><input type="button" id="recipientsAdd" value="Add"></div>
 	<div id="recipientsTable"></div>
 	<br><input type="button" page="pageBalances" class="back" value="Back"><input id="pageRecipientsNext" type="button" page="pageSent" class="next" value="Send" disabled>
 </div>
@@ -83,23 +84,39 @@
 <h1>Getting Balance:</h1>
 Scanning balance of <span id="keyCount"></span> private keys
 </div>
+
 <div id="window_utxos" class="window">
 <h1>Getting UTXOs:</h1>
 Currently gathering all unspent outputs(UTXO) for the requested addresses.<br>
 This may take a minute.
 </div>
+
+<div id="window_asset" class="window">
+<h1>DigiAsset Found:</h1>
+Asset ID: <span class="assetValue" id="assetID"></span><br>
+Asset Name: <span class="assetValue" id="assetName"></span><br>
+Asset Issuer: <span class="assetValue" id="assetIssuer"></span><br>
+Asset Description: <span class="assetValue" id="assetDescription"></span><br>
+Asset Quantity: <span class="assetValue" id="assetQuantity"></span><br>
+&nbsp;<br>
+New Address: <div class="assetValue" id="assetAddress" class="addressBox" contenteditable></div><br>
+<input type="button" id="assetSkip" value="Don't Move">&nbsp;<input type="button" id="assetMove" value="Send">
+</div>
+
 <div id="window_sending" class="window">
 <h1>Sending:</h1>
 Sending send command to server.<br>
 Your private keys do not leave this machine<br>
 only signatures proving you know them.
 </div>
+
 <div id="window_password" class="window">
 <h1>Password Protected Input:</h1>
 <h3>Please provide a list of passwords we should try. 1 per line.</h3>
 <textarea id="passwords" cols="40" rows="5"></textarea><br>
 <input type="submit" id="passwordTry" value="Try Passwords">&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit" id="passwordFail" value="Cancel">
 </div>
+
 <div id="window_password2" class="window">
 <h1>Password Protected Input:</h1>
 <h3 id="password2_key"></h3>
@@ -107,13 +124,15 @@ only signatures proving you know them.
 <textarea id="passwords2" cols="40" rows="5"></textarea><br>
 <input type="submit" id="passwordTry2" value="Try Passwords">&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit" id="passwordFail2" value="Cancel">
 </div>
+
 <div id="window_progress" class="window">
 <h1>Decoding Key</h1>
 <h3 id="progress">0%</h3>
 </div>
+
 <div id="window_unspendable" class="window">
 <h1>Unspendable Coins Found</h1>
-<p><span id="unspendableQuantity"></span> DGB was in UTXO that can not yet be spent.  To send that part of the balance you will have to try again later.  The rest can be sent now.</p>
+<p><span id="unspendableQuantity"></span> DGB was in UTXO that can not yet be spent(or Assets where present).  To send that part of the balance you will have to try again later.  The rest can be sent now.</p>
 <input type="button" class="close" value="OK">
 </div>
 

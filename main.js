@@ -29,8 +29,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 "use strict";
 (function(window,document,undefined){
 	const MAX_REQUESTS=4;													//max number of concurent requests to explorer server
-	const MAX_UNUSED=2;													//bip39 giveup point recommend 20
+	const MAX_UNUSED=20;													//bip39 giveup point recommend 20
 	const SEND_MIN=0.0007;													//minimum amount that can be sent to an address
+	const DUST_VALUE=0.00007;
 	
 	
 /*     _  _____  ____  _   _   _____                            _   
@@ -177,6 +178,71 @@ Has been moved to xmr.js
 	}
 
 	
+/* **************************************************************
+
+			HANDLE AddressBox
+			
+************************************************************** */
+
+var checkAddressValid=function(domItem) {
+	var newAddress=domItem.innerHTML.trim().replace(/<[^>]*>?/gm,'');	//get the new address to add
+	var html=newAddress;
+	if (!DigiByte.Address.isValid(newAddress)) {
+		if (newAddress.toUpperCase().substr(0,4)=='DGB1') {
+			
+			//find error information
+			var a=bech32Check(newAddress,'dgb');
+			if (a.error!=null) {
+				//handle errors
+				html='';
+				for (var p = 0; p < newAddress.length; ++p) {
+					if (a.pos.indexOf(p) != -1) {
+						html += '<a style="color:red">' + newAddress.charAt(p) + '</a>';
+					} else {
+						html += newAddress.charAt(p);
+					}
+				}
+			}
+			
+		} else {
+			html='<a style="color:red">' + newAddress + '</a>';
+		}
+	}
+		
+	//save html out
+	domItem.innerHTML=html;
+}
+var domAddressBox=document.getElementsByClassName("addressBox");				//get all dom items using class next
+for (var i=0; i<domAddressBox.length; i++) {								//go through each dom element with class "next"
+	(function(domItem) {
+		var addressBoxTimeoutEvent=null;
+		domItem.addEventListener('input', function() {
+			if (addressBoxTimeoutEvent != null) {
+				clearTimeout(addressBoxTimeoutEvent);
+			}
+			addressBoxTimeoutEvent = setTimeout(function() {
+				checkAddressValid(domItem);
+			},2000);
+		}, false);			//attach click listener to execute loadPage function
+	})(domAddressBox[i]);
+}
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	
 	
@@ -211,7 +277,6 @@ Has been moved to xmr.js
 				for (var pass of passwords) {
 					try {
 						var decoded=JSON.parse(sjcl.decrypt(pass, data));
-						console.log(decoded);
 						
 						return resolve(decoded["xPrivKey"]);
 						
@@ -711,7 +776,6 @@ Has been moved to xmr.js
 									i++;
 									testNext();
 								},function() {
-									console.log('Decode Failed');
 									if (passI!=last) {
 										tryNextPass();
 									} else {
@@ -791,7 +855,6 @@ Has been moved to xmr.js
 					}
 					document.getElementById("balanceTable").innerHTML=html;	//write html code to dom
 					document.getElementById("balanceTotal").innerHTML=fundsTotal.toFixed(8);//write total balance found
-					document.getElementById("recipientTotal").innerHTML=fundsTotal.toFixed(8);//write total balance found
 					closeWindows(true);										//close any open windows and remove shadow
 					resolve();												//resolve the promise(we are done)
 					
@@ -829,12 +892,13 @@ Has been moved to xmr.js
 				*********************************************** */
 				var showGettingUTXOs=function() {
 					openWindow('utxos');
-					setTimeout(getUTXOs,10);
+					setTimeout(document.getElementById('assetUse').checked?getAssetUTXOs:getUTXOs,10);
 				}
 				
 				/* ***********************************************
-				* 2) Get all UTXO for address with non 0 balance *
+				* 2a) Get all UTXO for address with non 0 balance*
 				*********************************************** */
+				var fundsTotal=0;
 				var getUTXOs=function() {
 					var req={};											//create object to store requests
 					for (var address in accountData) {					
@@ -843,9 +907,13 @@ Has been moved to xmr.js
 					}
 					xmr.getJSON(req,"",function(data,address){
 						for (var utxo of data) {
-							if (utxo["confirmationsFromCache"]) {
+							if (
+								(utxo["confirmationsFromCache"])&&		//no recent coinbase transactions
+								(utxo["amount"]>DUST_VALUE)				//dont include DigiAssets
+							) {
+								fundsTotal+=utxo["amount"];
 								transaction.addIn(utxo,accountData[address].private);
-							} else {
+							} else if (utxo["confirmationsFromCache"]) {
 								unspendable+=utxo["amount"];
 								accountData[address].balance-=utxo["amount"];		//reduce funds if any utxo where unspendable
 							}
@@ -854,11 +922,245 @@ Has been moved to xmr.js
 					}).then(finish,reject);
 				}
 				
-
+				/* ***********************************************
+				* 2b) Check all UTXOs for assets and move assets to new address*
+				*********************************************** */				
+				var usableUtxos=[];
+				var sweepableUtxos=[];
+				var usableAssets=[];
+				var getAssetUTXOs=function() {
+					xmr.setServer('https://api.digiassets.net/');	
+					var req={};											//create object to store requests
+					for (var address in accountData) {					
+						if (accountData[address].balance>0) 
+							req[address]="addressinfo/"+address;
+					}
+					xmr.getJSON(req,"",function(data,address){
+						for (var utxo of data['utxos']) {
+							if (!utxo["used"]) {
+								if (utxo['assets'].length==0) {
+									if (utxo['value']>700) {
+										if (utxo['value']>2500) {
+											utxo["n"]=utxo["index"];
+											usableUtxos.push(utxo);
+										} else {
+											sweepableUtxos.push(utxo);
+										}
+									} else {
+										accountData[address].balance-=utxo["value"];
+									}
+								} else {
+									//assets
+									usableAssets.push({
+										"address":	utxo['address'],
+										"txid":		utxo['txid'],
+										"vout":		utxo['index'],
+										"scriptPubKey":utxo['scriptPubKey']['hex'],
+										"amount":	utxo['value'],
+										"assets":	utxo['assets']
+									});									
+								}
+							}
+						}
+						
+					}).then(getAssetMeta,reject);					
+				}
+				var getAssetMeta=function() {
+					if (usableAssets.length>0) {
+						var req=[];											//create object to store requests
+						for (var index in usableAssets) {
+							var asset=usableAssets[index]['assets'][0];
+							req[index]="assetmetadata/"+asset['assetId']+"/"+usableAssets[index]['txid']+":"+usableAssets[index]['vout'];
+						}
+						
+						//txid:vout
+						xmr.getJSON(req,"",function(data,index){
+							usableAssets[index]["metaData"]=data['metadataOfIssuence']['data'];							
+						}).then(sendAssets,reject);
+					} else {
+						//process as non asset job(temp work around)
+						xmr.setServer(document.getElementById('server').value);
+						getUTXOs();
+						
+					}
+				}
+				
+				var sendAssets=function() {
+					//process assets
+					var finishAssets=function(){
+						/*
+						//process any remaining utxo so can be processed by main sweep
+						for (var index in usableUtxos) {
+							var reformatedUTXO={
+								"address":	usableUtxos[index]['address'],
+								"txid":		usableUtxos[index]['txid'],
+								"vout":		usableUtxos[index]['index'],
+								"scriptPubKey":usableUtxos[index]['scriptPubKey']['hex'],
+								"amount":	usableUtxos[index]['value']/100000000
+							};
+							
+							fundsTotal+=reformatedUTXO=["amount"];
+							transaction.addIn(reformatedUTXO,accountData[reformatedUTXO['address']].private);
+						}
+						for (var index in sweepableUtxos) {
+							var reformatedUTXO={
+								"address":	sweepableUtxos[index]['address'],
+								"txid":		sweepableUtxos[index]['txid'],
+								"vout":		sweepableUtxos[index]['index'],
+								"scriptPubKey":sweepableUtxos[index]['scriptPubKey']['hex'],
+								"amount":	sweepableUtxos[index]['value']/100000000
+							};
+							
+							fundsTotal+=reformatedUTXO=["amount"];
+							transaction.addIn(reformatedUTXO,accountData[reformatedUTXO['address']].private);
+						}
+						finish();						//catch back up with non asset path
+						*/
+						
+						
+						reject("At this time DigiSweep can not both send assets and funds at the same time.  Please wait 2min then restart the process to send all your funds.");
+						
+					}
+					if (usableAssets.length>0) {
+						
+						/*
+							Step through each asset found. and show meta data and ask where they want it sent or if should be skipped.
+							Need to use one of the utxo without an asset for funds so ask where change should go.
+							When all assets processed then finish up any remaining utxos.
+							
+							** still need to handle dom button clicks							
+						
+							var usableUtxos=[];
+							var usableAssets=[
+								{
+									"address":		string,
+									"txid":			string hex,
+									"vout":			int,
+									"scriptPubKey":	string hex,
+									"amount":		int(satoshi),
+									"assets":		[{
+										"assetId":	string,
+										"amount":	int,
+										"issueTxid":string,
+										"divisibility":int,
+										"lockStatus":bool,
+										"aggregationPolicy":string	
+									}],
+									"metaData":		{
+										"assetName":string,
+										"issuer":	string,
+										"description":string
+									}
+								}
+							];
+						*/	
+						if (usableUtxos.length>=usableAssets.length) {
+							var index=-1;						
+							var checkNextAsset=function() {
+								if (++index<usableAssets.length) { 
+									//show asset data
+									var asset=usableAssets[index];
+									if (asset['assets'].length>1) {
+										alert("DigiSweep can not move " + asset['metaData']['assetName']+" at this time.  Sorry for the inconvenience.");
+										checkNextAsset();
+									} else {
+										document.getElementById('assetID').innerHTML=asset['assets'][0]['assetId'];
+										document.getElementById('assetName').innerHTML=asset['metaData']['assetName'];
+										document.getElementById('assetIssuer').innerHTML=asset['metaData']['issuer'];
+										document.getElementById('assetDescription').innerHTML=asset['metaData']['description'];
+										document.getElementById('assetQuantity').innerHTML=asset['assets'][0]['amount'];
+										openWindow('asset');
+									}
+								} else {
+									finishAssets();
+								}
+							}
+							checkNextAsset();
+							document.getElementById('assetSkip').addEventListener('click',checkNextAsset);
+							document.getElementById('assetMove').addEventListener('click',function() {
+								//move assets
+								var assetAddress=document.getElementById('assetAddress').innerHTML.trim().replace(/<[^>]*>?/gm,'');
+								if (DigiByte.Address.isValid(assetAddress)) {
+									//new addresses are both valid so continue
+									// **************************************************************************
+									// **************************************************************************
+									// **************************************************************************
+									// **************************************************************************
+									// *******************Need to finish below***********************************
+									// **************************************************************************
+									var asset=usableAssets[index];
+									var utxo=usableUtxos.pop();
+									xmr.setServer('https://api.digiassets.net/');	
+									xmr.postJSON('sendasset',{
+										"fee": 1200,
+										"sendutxo":[
+											asset["txid"]+":"+asset["vout"]
+										],
+										"financeOutput": utxo,
+										"financeOutputTxid": utxo["txid"],
+										"to":[
+											{
+												"address":	assetAddress,
+												"amount":	asset['assets'][0]["amount"],
+												"assetId":	asset['assets'][0]["assetId"]
+											}
+										]
+										//change ?
+									}).then(function(data){
+										//need to sign and send transaction returned by server
+										var bitcoin=window['bitcoinjs']['bitcoin'];
+										var tx=new bitcoin.TransactionBuilder.fromTransaction (
+											bitcoin.Transaction.fromHex(data['txHex'])
+										);	//my library has Bitcoin replaced with DigiByte.  Normally you need to provide network variable
+										/*
+											first input is financial so sign with private key for utxo['address']
+											second is asset so sign with private key from asset['address']
+										*/
+										var sources=[
+											{
+												address:utxo['address'],
+												pkey:	bitcoin.ECPair.fromWIF(accountData[utxo['address']].private),
+												amount:	utxo['amount']
+											},
+											{
+												address:asset['address'],
+												pkey:	bitcoin.ECPair.fromWIF(accountData[asset['address']].private),
+												amount:	asset['amount']
+											}
+										];
+										for (var index in sources) {
+											var source=sources[index];
+											if (source.address.substr(0,4)=='dgb1') {
+												tx.sign(parseInt(index),source.pkey, null, null, source.amount);
+											} else if (source.address.substr(0,1)=='S') {
+												//place holder can't do yet
+												reject("Can't do S addresses yet");
+											} else {
+												tx.sign(parseInt(index),source.pkey);
+											}
+										}
+										var hex=tx.build().toHex();
+										xmr.setServer(document.getElementById('server').value);
+										xmr.postJSON('tx/send',{										//post data to server to be distributed to network
+											"rawtx": hex												//get data needed to send to network
+										}).then(checkNextAsset,reject);
+									},reject);
+								}
+							});
+						} else {
+							return reject("Not enough usable UTXO in wallet to transfer assets.  Make "+(usableAssets.length-usableUtxos.length)+" deposits of at least 0.00003 DGB into one of your addresses");
+						}
+					} else {
+						finishAssets();
+					}						
+				}
+				
 				/* ***********************************************
 				* 3) All done geting utxos so continue program	 *
 				*********************************************** */
 				var finish=function(reqResponses) {
+					xmr.setServer(document.getElementById('server').value);						//make sure set back to right server
+					document.getElementById("recipientTotal").innerHTML=fundsTotal.toFixed(8);//write total balance found
 					closeWindows(true);
 					if (unspendable>0) {
 						openWindow("unspendable");
@@ -918,27 +1220,6 @@ Has been moved to xmr.js
 		if (newAddress=="") return error("Address Empty");				//bomb out if empty
 
 		if (!DigiByte.Address.isValid(newAddress)) {
-			if (newAddress.toUpperCase().substr(0,4)=='DGB1') {
-				var html=newAddress;
-				
-				//find error information
-				var a=bech32Check(newAddress,'dgb');
-				if (a.error!=null) {
-					//handle errors
-					html='';
-					for (var p = 0; p < newAddress.length; ++p) {
-						if (a.pos.indexOf(p) != -1) {
-							html += '<a style="color:red">' + newAddress.charAt(p) + '</a>';
-						} else {
-							html += newAddress.charAt(p);
-						}
-					}
-				}
-				
-				//save html out
-				domNew.innerHTML=html;
-			}
-			
 			return error("Invalid Address");	//bomb out if invalid input
 		}
 				
@@ -955,7 +1236,7 @@ Has been moved to xmr.js
 		/* **********************************
 		* 3) Rebuld recipient HTML          *
 		********************************** */
-		domNew.value='';												//clear the input box
+		domNew.innerHTML='';												//clear the input box
 		var html='<div class="recipientsRow"><div class="recipientsHead">Address</div><div class="recipientsHead">Amount</div></div>';	//initialize table html variable with header
 		for (var address in recipients) {								//go through list of recipients one by one and get there address
 			html+='<div class="recipientsRow"><div class="recipientsCellAddress">'+address+'</div><input type="number" address="'+address+'" class="recipientsCellAmount" value="'+recipients[address].toFixed(8)+'"></div>';
@@ -1025,7 +1306,6 @@ Has been moved to xmr.js
 						transaction.addOut(address,satoshi);
 					}
 					var txs=transaction.toHex();													//initialise message variable	
-					console.log(txs);
 					if (txs===false) return reject("Error Forming Request");
 					var txids=[];
 					var waiting=txs.length;

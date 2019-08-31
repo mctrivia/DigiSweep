@@ -104,8 +104,6 @@
     border: 1px solid gray;
 }
 
-
-
 #shadow {
 	position:			fixed;
 	padding:			0;
@@ -136,4 +134,11 @@
 	font-weight:		bold;
 	background-color: 	#EEEEEE;
 	z-index: 			1000000;
+}
+
+#window_asset {
+	text-align:			left;	
+}
+.assetValue {
+	font-weight:		normal;	
 }

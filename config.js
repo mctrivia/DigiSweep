@@ -25,13 +25,13 @@ var appTests=[
 		"master":"Bitcoin seed",
 		"derivation":"m/44'/20'/0'",
 		"start":"D"
-	},
+	},/*
 	{
 		"name":"BIP49 Wallets",
 		"master":"Bitcoin seed",
 		"derivation":"m/49'/20'/0'",
 		"start":"S"
-	},
+	},*/
 	{
 		"name":"BIP84 Wallets",
 		"master":"Bitcoin seed",
