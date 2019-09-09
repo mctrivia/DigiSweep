@@ -1,8 +1,7 @@
 (function(undefined) {
-	const TX_FEE=20000;		//satoshi per kb
-	const TX_MIN = 70000;
+	const TX_FEE=20;		//satoshi per kb
+	const TX_MIN = 7000;
 	const TX_MAX_UTXO = 60;
-	
 	var bitcoinjs=window['bitcoinjs'];
 	
 	
@@ -70,12 +69,11 @@
 	};
 	DigiByteTX.prototype={
 		"addIn":		function(utxo,priv) {
-			var pkey=bitcoinjs['bitcoin']['ECPair']['fromWIF'](priv);
-			this.in.push([utxo,pkey]);
+			this.in['push']([utxo,priv]);
 		},
 		"addData":		function(data) {
 			if (data.length>80) throw data+" is to long";
-			this.data.push(data);
+			this.data['push'](data);
 		},
 		"addOut":		function(address,satoshis) {
 			if (!this["isValidAddress"](address)) throw address+" is invalid DigiByte address";
@@ -95,9 +93,11 @@
 		"getOutCount":	function() {
 			return Object["keys"](this.out)["length"];
 		},
-		"getFee":		function(inputs) {
+		"getFee":		function(inputs,outputs) {	//fee in satoshi
 			inputs=inputs||this["getInCount"]();
-			return TX_FEE*Math["ceil"](inputs/6);
+			outputs=outputs||this["getOutCount"]();
+			return TX_FEE*(44+180*inputs+34*outputs);
+			//return TX_FEE*Math["ceil"](inputs/6);
 		},
 		"getBalance":	function() {
 			var balance=0-this["getFee"]();
@@ -130,24 +130,23 @@
 				var input=JSON['parse'](JSON['stringify'](me.in));
 				var out=JSON['parse'](JSON['stringify'](me.out));
 				var data=JSON['parse'](JSON['stringify'](me.data));
-			
 				
 				//add inputs and outputs
 				var inputsPerMessage=Math['ceil'](me['getInCount']()/messageCount);
 				for (var messageI=0;messageI<messageCount;messageI++) {
 					//set fee
-					messageData[messageI]['fee']=me['getFee'](inputsPerMessage);
+					messageData[messageI]['fee']=me['getFee'](inputsPerMessage,out['length']);
 					
 					//add inputs
 					var balance=0;
 					for (var i=0;i<inputsPerMessage;i++) {
-						if (input.length==0) {
-							messageData[messageI]=me['getFee'](i);
+						if (input['length']==0) {
+							messageData[messageI]['fee']=me['getFee'](i,out['length']);
 							break;
 						}
 						var currentInput=input.pop();
 						balance+=currentInput[0]['amount'];	//satoshi
-						messageData[messageI].in['push'](currentInput);
+						messageData[messageI]['in']['push'](currentInput);
 					}
 					balance=Math.round(balance*100000000-messageData[messageI]['fee']);	//convert to satoshi and remove fee
 					
@@ -157,7 +156,7 @@
 						if (satoshi<=balance) {
 							balance-=satoshi;
 							messageData[messageI]['out'][address]=satoshi;
-							out[address]=undefined;
+							out[address]=undefined;	//remove needed output
 						}						
 						if (balance<TX_MIN) break;
 					}
@@ -181,13 +180,15 @@
 					if (data['length']==0) break;
 					for (var ii=0;ii<dataCountPerMessage;ii++) {
 						if (data['length']==0) break;
-						messageData[i].data['push'](data['pop']());
+						messageData[i]['data']['push'](data['pop']());
 					}
 				}
+				
 			}
 			
 			var hex=[];
-			for (var message of messageData) {
+			for (var index in messageData) {
+				var message=messageData[index];
 				
 				var tx=new bitcoinjs['bitcoin']['TransactionBuilder']();
 				
@@ -196,18 +197,20 @@
 				
 				//add inputs
 				var utxos=[];
-				for (var data of message['in']) {
+				for (var index in message['in']) {
+					var data=message['in'][index];
+					var pkey=bitcoinjs['bitcoin']['ECPair']['fromWIF'](data[1]);
 					if (data[0]['address'].substr(0,4)=='dgb1') {
 						var scriptPubkey = bitcoinjs['bitcoin']['script']['witnessPubKeyHash']['output']['encode'](
 							bitcoinjs['bitcoin']['crypto']['hash160'](
-								data[1]['getPublicKeyBuffer']()
+								pkey['getPublicKeyBuffer']()
 							)
 						);
 						tx['addInput'](data[0]["txid"],data[0]["vout"],null, scriptPubkey);
 					} else if (data[0]['address'].substr(0,1)=='S') {
 						var witnessScript = bitcoinjs['bitcoin']['script']['witnessPubKeyHash']['output']['encode'](
 							bitcoinjs['bitcoin']['crypto']['hash160'](
-								data[1]['getPublicKeyBuffer']()
+								pkey['getPublicKeyBuffer']()
 							)
 						);
 						var scriptPubKey = bitcoinjs['bitcoin']['script']['scriptHash']['output']['encode'](
@@ -221,7 +224,8 @@
 				}
 				
 				//add data
-				for (var data of message['data']) {
+				for (var index in message['data']) {
+					var data=message['data'][index];
 					tx['addOutput'](
 						bitcoinjs['bitcoin']['script']['compile']([
 							bitcoinjs['bitcoin']['OP_RETURN'],
@@ -251,14 +255,16 @@
 				//sign tx
 				for (var index in message['in']) {
 					var data=message['in'][index];
-					if (data[0]['address'].substr(0,4)=='dgb1') {
-						tx['sign'](parseInt(index),data[1], null, null, Math.round(data[0]['amount']*100000000));
-					} else if (data[0]['address'].substr(0,1)=='S') {
-						var pubKeyHash = bitcoinjs['bitcoin']['crypto']['hash160'](data[1]['getPublicKeyBuffer']());
+					var pkey=bitcoinjs['bitcoin']['ECPair']['fromWIF'](data[1]);
+					if (data[0]['address']['substr'](0,4)=='dgb1') {
+						tx['sign'](parseInt(index),pkey, null, null, Math.round(data[0]['amount']*100000000));
+					} else if (data[0]['address']['substr'](0,1)=='S') {
+						
+						var pubKeyHash = bitcoinjs['bitcoin']['crypto']['hash160'](pkey['getPublicKeyBuffer']());
 						var redeemScript = bitcoinjs['bitcoin']['script']['witnessPubKeyHash']['output']['encode'](pubKeyHash);
-						tx['sign'](parseInt(index),data[1], redeemScript, null, Math.round(data[0]['amount']*100000000));
+						tx['sign'](parseInt(index),pkey, redeemScript, null, Math.round(data[0]['amount']*100000000));
 					} else {
-						tx['sign'](parseInt(index),data[1]);
+						tx['sign'](parseInt(index),pkey);
 					}
 				}
 				
