@@ -139,7 +139,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 					console["log"]("Invalid JSON",data);				//put invalid data to debug log
 					reject("Invalid JSON");								//reject since not not valid json
 				} else {												//data was valid
-					resolve(decodedJSON);								//resolve the promise
+					if (decodedJSON["error"]!=undefined) {				//check if there is an error field
+						reject(decodedJSON["error"]);					//reject the promise
+					} else {
+						resolve(decodedJSON);							//resolve the promise
+					}
 				}
 			},reject);													//continue reject if request failed
 		});

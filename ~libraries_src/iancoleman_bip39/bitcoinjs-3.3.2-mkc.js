@@ -12051,12 +12051,12 @@ TransactionBuilder.prototype.addOutput = function (scriptPubKey, value) {
   if (!this.__canModifyOutputs()) {
     throw new Error('No, this would invalidate signatures');
   }
-console.log('make',scriptPubKey, value,baddress,this.network);
+  
   // Attempt to get a script if it's a base58 address string
   if (typeof scriptPubKey === 'string') {
     scriptPubKey = baddress.toOutputScript(scriptPubKey, this.network);
   }
-console.log(scriptPubKey);
+  
   return this.tx.addOutput(scriptPubKey, value);
 }
 
