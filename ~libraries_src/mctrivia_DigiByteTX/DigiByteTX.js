@@ -1,5 +1,5 @@
 (function(undefined) {
-	const TX_FEE=20;		//satoshi per kb
+	const TX_FEE=20;		//satoshi per byte
 	const TX_MIN = 7000;
 	const TX_MAX_UTXO = 60;
 	var bitcoinjs=window['bitcoinjs'];
