@@ -78,7 +78,7 @@
 		"addOut":		function(address,satoshis) {
 			if (!this["isValidAddress"](address)) throw address+" is invalid DigiByte address";
 			if (this.out[address]==undefined) this.out[address]=0;
-			this.out[address]+=satoshis;
+			this.out[address]+=Math['round'](satoshis);			//just incase value is a floating point value instead of an int like it should be
 		},
 		"setChange":	function(address) {
 			if (!this["isValidAddress"](address)) throw address+" is invalid DigiByte address";
@@ -97,7 +97,6 @@
 			inputs=inputs||this["getInCount"]();
 			outputs=outputs||this["getOutCount"]();
 			return TX_FEE*(44+180*inputs+34*outputs);
-			//return TX_FEE*Math["ceil"](inputs/6);
 		},
 		"getBalance":	function() {
 			var balance=0-this["getFee"]();
