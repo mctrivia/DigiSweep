@@ -32,7 +32,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	const MAX_UNUSED=20;													//bip39 giveup point recommend 20
 	const SEND_MIN=0.0007;													//minimum amount that can be sent to an address
 	const DUST_VALUE=0.00007;
-	
+	const ASSET_SERVER='http://createdigiassets.com:8090/';
 	
 /*     _  _____  ____  _   _   _____                            _   
       | |/ ____|/ __ \| \ | | |  __ \                          | |  
@@ -929,7 +929,7 @@ for (var i=0; i<domAddressBox.length; i++) {								//go through each dom elemen
 				var sweepableUtxos=[];
 				var usableAssets=[];
 				var getAssetUTXOs=function() {
-					xmr.setServer('https://api.digiassets.net/');	
+					xmr.setServer(ASSET_SERVER);	
 					var req={};											//create object to store requests
 					for (var address in accountData) {					
 						if (accountData[address].balance>0) 
@@ -940,7 +940,8 @@ for (var i=0; i<domAddressBox.length; i++) {								//go through each dom elemen
 							if (!utxo["used"]) {
 								if (utxo['assets'].length==0) {
 									if (utxo['value']>700) {
-										if (utxo['value']>2500) {
+										console.log(utxo);
+										if ((utxo['value']>2500)&&(utxo['address'][0]=="D")) {
 											utxo["n"]=utxo["index"];
 											usableUtxos.push(utxo);
 										} else {
@@ -1090,7 +1091,7 @@ for (var i=0; i<domAddressBox.length; i++) {								//go through each dom elemen
 									// **************************************************************************
 									var asset=usableAssets[index];
 									var utxo=usableUtxos.pop();
-									xmr.setServer('https://api.digiassets.net/');	
+									xmr.setServer(ASSET_SERVER);	
 									xmr.postJSON('sendasset',{
 										"fee": 1200,
 										"sendutxo":[
